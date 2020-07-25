@@ -35,6 +35,5 @@ int main(int argc, char *argv[])
 //  freeaddrinfo(result);
     return 0;
 }
-Type  :qa!  and press <Enter> to abandon all changes and exit Vim
 
 
