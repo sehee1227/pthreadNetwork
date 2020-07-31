@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
     sin = (void*)result->ai_addr;
     printf("addr:%s\n", inet_ntoa(sin->sin_addr));
-//  freeaddrinfo(result);
+	freeaddrinfo(result);
     return 0;
 }
 
