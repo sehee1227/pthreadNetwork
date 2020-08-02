@@ -1,20 +1,5 @@
 #include "socketservice.h"
-
-	struct sockInfo{
-		Socket* plistener; 	
-	}
-	map<int, sockInfo*> sockHandle;
-	
-	int mctrlPipe[2];
-	int	mcntlEvent;
-
-	fd_set	stReadFS;
-	fd_set	stWriteFS;
-	fd_set	stEceptFS;
-
-	fd_set	stReadFSTmp;
-	fd_set	stWriteFSTmp;
-	fd_set	stEceptFSTmp;
+#include <pthread.h>
 	
 SocketService::SocketService()
 {
@@ -34,7 +19,7 @@ SocketService::SocketService()
 	FD_SET(mctrlPipe[0], EVENT_READ);
 
 }
-static SocketService*SocketService::getInstance()
+static SocketService* SocketService::getInstance()
 {
 	static SocketService* sockService = NULL;
 	if(sockService == NULL){
@@ -44,11 +29,11 @@ static SocketService*SocketService::getInstance()
 }
 SocketService::~SocketService(){}
 
-SocketService::attachHandle(int handle, Socket*sockInfo)
+bool SocketService::attachHandle(int handle, SockInfo* sockInfo)
 {
 	char ch = "1";
 	
-	sockHandle.insert(make_pari(handle, sockInfo));
+	sockInfo.push_back(sockInfo);
 
 	FD_SET(handle, EVENT_READ);
 	FD_SET(handle, EVENT_WRITE);
@@ -62,15 +47,24 @@ SocketService::attachHandle(int handle, Socket*sockInfo)
 
 
 }
-	detachHandle(int)
-	updateFD();
-void SocketService::sendNotify()
+void SocketService::detachHandle(int)
 {
+
 }
-void SocketService::threadImp()
+void SocketService::updateFD()
+{
+
+}
+
+void SocketService::sendNotify(void* pInstance)
+{
+	pInstance->notify();
+}
+void *SocketService::threadImp(void* data)
 {
 	int nRes;
 	int maxSignal;
+	int nFD;
 
 	for(;;){
 		memcopy(stReadFSTmp,stReadFS);
@@ -80,7 +74,10 @@ void SocketService::threadImp()
 		nRes = select(maxFD+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp);
 		maxSignal = nRes;
 
-		for(int i = 0,; i<sockHandle.size ; i++){
+		list<sockInfo>::iterator itr;
+
+		for(itr = sockInfo.begin(); itr!= sockInfo.end(); itr++){
+			nFD = *iter->sockFd;
 			if( FD_ISSET(nFD, &stReadFSTmp)){
 				sendNotify(EVENT_READ);
 				maxSignal--;
