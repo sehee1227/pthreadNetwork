@@ -5,17 +5,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "msgQueue.h"
+
 void clientChat(const char *addr)
 {
     int status;
-    struct addrinfo *result, *rp;
     struct sockaddr_in sin;
-    struct addrinfo hints;
-    int i;
 
     printf("addr: %s\n", addr);
 
-    memset(&hints, 0x00, sizeof(struct addrinfo));
 
     hints.ai_flags = AI_PASSIVE;
 //  hints.ai_family = AF_UNSPEC;
