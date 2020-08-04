@@ -24,13 +24,18 @@ SocketService::SocketService()
 		printf("Fail to pthread_create\n");
 	}
 
-	//stReadFS = stWriteFS = stEceptFS = 0;
-	//stReadFSTmp = stWriteFSTmp = stEceptFSTmp = 0;
+	FD_ZERO(&stReadFS);
+	FD_ZERO(&stWriteFS);
+	FD_ZERO(&stExceptFS);
+
+	FD_ZERO(&stReadFSTmp);
+	FD_ZERO(&stWriteFSTmp);
+	FD_ZERO(&stExceptFSTmp);
 
 	if (pipe(mctrlPipe) <0){
 		printf("Fial to create pipe\n");
 	}
-	//FD_SET(mctrlPipe[0], READ_EVENT);
+	FD_SET(mctrlPipe[0], &stReadFS);
 
 }
 
@@ -46,7 +51,7 @@ SocketService* SocketService::getInstance()
 
 bool SocketService::attachHandle(int handle, Socket* socket)
 {
-	const char ch = 'A' ;
+
 	SockInfo sInfo;
 
 	sInfo.sockFd = handle;
@@ -54,30 +59,54 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 	
 	sockList.push_back(sInfo);
 
-	//FD_SET(handle, READ_EVENT);
-	//FD_SET(handle, WRITE_EVENT);
-	//FD_SET(handle, EXCEPT_EVENT);
-
 	if (handle > maxFd){
-			printf("handle is bigger than maxFD(%d)\n", maxFd);
+			printf("handle(%d) is bigger than maxFD(%d)\n", handle, maxFd);
 			maxFd = handle;
 			return false;
 	}
-	write(mctrlPipe[1], (void*)&ch, 1);
+	// write(mctrlPipe[1], (void*)&ch, 1);
 	
 	return true;
 
 }
 
-void SocketService::detachHandle(int handle)
+void SocketService::detachHandle(int handle) 
 {
+	updateEvent(handle, 0);
+
+	std::list<SockInfo>::iterator itr;
+	for(itr = sockList.begin(); itr!= sockList.end(); itr++){
+		SockInfo sockinfo = *itr;
+		if(sockinfo.sockFd == handle){
+			sockList.erase(itr);
+		}
+	}
 	printf("detach handle\n");
 }
 
-void SocketService::updateEvent(int event)
+void SocketService::updateEvent(int handle, int event)
 {
+	const char ch = 'A' ;
 
-	printf("updata event\n");
+	FD_CLR(handle, &stReadFS);
+	FD_SET(mctrlPipe[0], &stReadFS);
+
+	if (event & READ_EVENT){
+		FD_SET(handle, &stReadFS);
+	}
+
+	FD_CLR(handle, &stWriteFS);
+	if (event & WRITE_EVENT){
+		FD_SET(handle, &stWriteFS);
+	}
+
+	FD_CLR(handle, &stExceptFS);
+	if (event & EXCEPT_EVENT){
+		FD_SET(handle, &stExceptFS);
+	}
+
+	write(mctrlPipe[1], (void*)&ch, 1);
+	printf("updata event:%x\n", event);
 }
 
 void SocketService::sendNotify(Socket* pInstance, int event)
@@ -91,13 +120,25 @@ void* SocketService::run(void)
 	int maxSignal;
 	int nFD;
 
+	printf("start Socket Service thread\n");
+
 	for(;;){
 		memcpy(&stReadFSTmp,&stReadFS, sizeof(stReadFS));
 		memcpy(&stWriteFSTmp,&stWriteFS, sizeof(stWriteFS));
 		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));
 
+		FD_SET(mctrlPipe[0], &stReadFSTmp);
+		
 		nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, 0);
 		maxSignal = nRes;
+
+		if( FD_ISSET(mctrlPipe[0], &stReadFSTmp)){
+			char ch[2] = {0,};
+			read(mctrlPipe[0], ch, 1);
+			printf("RX CRTL msg(%s)\n", ch);
+
+			maxSignal--;
+		}		
 
 		std::list<SockInfo>::iterator itr;
 		
@@ -123,7 +164,6 @@ void* SocketService::run(void)
 			}
 		}
 	}
-
-}
 	return NULL;
 }
+

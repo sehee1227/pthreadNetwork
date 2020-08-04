@@ -1,17 +1,22 @@
 #ifndef SOCKET_H
 #define SOCKET_H
-	enum socketState : int{
-			CLOSED,
-			LISTEN,
-			CONNECT,
-			ESTABLISHED,
-			CLOSING,
-	};
+
+#include <stdio.h>
+
+enum socketState : int{
+		CLOSED,
+		LISTEN,
+		CONNECT,
+		ESTABLISHED,
+		CLOSING,
+};
 class Socket
 {
 
-	int socketFD;
+
+
 	int 	state;
+	void (*callback)(int);
 
 	fd_set 	readFd;
 	fd_set 	writeFd;
@@ -20,6 +25,8 @@ class Socket
 	fd_set 	readFdTmp;
 	fd_set 	writeFdTmp;
 	fd_set	exceptFdTmp;
+protected:
+		int socketFD;
 public:
 	void setState(int state)
 	{
@@ -29,8 +36,19 @@ public:
 	{
 		return this->state;
 	}
-	virtual void notify(int);
-
+	void notify(int socketEvent)
+	{
+		printf("Send notify\n");
+		if (callback != NULL){
+			callback(socketEvent);
+		}
+		return;
+	}
+	void setCallback(void (*cbFunc)(int))
+	{
+		callback = cbFunc;
+		return;
+	}
 };
 
 #endif 

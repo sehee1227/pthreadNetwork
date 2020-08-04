@@ -41,7 +41,7 @@ public:
 	~SocketService();
 	bool attachHandle(int, Socket*);
 	void detachHandle(int);
-	void updateEvent(int);
+	void updateEvent(int, int);
 	void sendNotify(Socket*, int);
 	static void* threadImp(void*);
 	//void run_imp(SocketService*);

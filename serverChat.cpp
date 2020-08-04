@@ -11,6 +11,9 @@
 #include "TCPServSocket.h"
 
 #define PORT 9000
+#define RECBUF_SIZE 1024
+
+char recBuf[RECBUF_SIZE];
 
 struct chatMsg
 {
@@ -75,10 +78,12 @@ void serverChat(const char *addr)
     int sockState;
 
     chatMsg msg;
+
+    int recvCnt;
     
     TCPServSocket* sock = new TCPServSocket();
 
-    sock->open(&sin);
+    sock->Open(&sin);
 
     while(true){
         msgQue.wait();
@@ -137,6 +142,7 @@ void serverChat(const char *addr)
                         case CONNECT:
                             if (sockEvent & READ_EVENT){
 
+
                             }else if (sockEvent & WRITE_EVENT){
 
 
@@ -148,11 +154,15 @@ void serverChat(const char *addr)
                             break;
                         case ESTABLISHED:
                             if (sockEvent & READ_EVENT){
+                                recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
+                                recBuf[recvCnt] = '\0';
+                                printf("%s", recBuf);
 
                             }else if (sockEvent & WRITE_EVENT){
 
 
                             }else if (sockEvent & EXCEPT_EVENT){
+                                sock->Close();
 
                             } else {
                                 printf("ESTABLISHED state wrong event");

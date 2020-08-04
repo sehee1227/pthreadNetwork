@@ -1,23 +1,41 @@
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "TCPServSocket.h"
 
-bool TCPServSocket::open(sockaddr_in* sin)
+TCPServSocket::TCPServSocket()
 {
-	socketFD = socket();
-	bind();
+   	sockService = SocketService::getInstance();
+}
+
+TCPServSocket::~TCPServSocket()
+{
+   	printf("~TCPServSocket\n");
+}	
+
+bool TCPServSocket::Open(sockaddr_in* sin)
+{
+	
+	socketFD = socket(AF_INET, SOCK_STREAM, 0);
+	bind(socketFD, (struct sockaddr*)&sin, sizeof(sin));
 
 	setState(LISTEN);
+	
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(READ_EVENT | EXCEPT_EVENT);
+	sockService->updateEvent(socketFD, READ_EVENT | EXCEPT_EVENT);
+
+	printf("TCPServSocket Open\n");
+	
+	return true;
 }
 
 bool TCPServSocket::Accept()
 {
-	cliFD = accept();
+	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen );
 	setState(ESTABLISHED);
+	return true;
 
 }
 
@@ -37,16 +55,23 @@ int TCPServSocket::Recv(char* pBuf, int len)
 
 }
 
-void TCPServSocket::notify(int socketEvent)
+void TCPServSocket::Close()
 {
-	printf("Send notify\n");
-	if (callback != NULL){
-		callback(socketEvent);
-	}
-	return;
-}
+	sockService->detachHandle(socketFD);
+	close(cliFD);
+	close(socketFD);
 
-void TCPServSocket::setCallback(void (*cbFunc)(int)){
-	callback = cbFunc;
-	return;
 }
+// void TCPServSocket::notify(int socketEvent)
+// {
+// 	printf("Send notify\n");
+// 	if (callback != NULL){
+// 		callback(socketEvent);
+// 	}
+// 	return;
+// }
+
+// void TCPServSocket::setCallback(void (*cbFunc)(int)){
+// 	callback = cbFunc;
+// 	return;
+// }
