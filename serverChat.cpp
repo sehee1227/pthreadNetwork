@@ -5,29 +5,41 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 #include "msgQueue.h"
+#include "socketservice.h"
+#include "TCPServSocket.h"
 
 #define PORT 9000
 
 struct chatMsg
 {
-    enum cmdtype
-    {
-        NETWORK_EVENT,
-        USER_EVENT,
-    }
-    cmdtype cmd;
-    union cmd_msg{
+    int cmd;
+    union{
         int netEvent;
         char* data;
-    }
-}
+    }cmd_msg;
+};
 
-void sendEvent(socketEvent sockEvent){
+enum cmdtype
+{
+    NETWORK_EVENT,
+    USER_EVENT,
+};
+
+union cmd_msg{
+    int netEvent;
+    char* data;
+};
+
+msgQueue<chatMsg> msgQue;
+
+
+void sendEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
-    msg.putQ();
+    msgQue.putQ(msg);
 }
 
 void* userThread(void* data)
@@ -38,8 +50,8 @@ void* userThread(void* data)
     while(true){
         scanf("%s", buf);
 
-        char* data = malloc(sizeof(buf));
-        memset(data, 0x00, szeof(data));
+        char* data = (char *)malloc(sizeof(buf));
+        memset(data, 0x00, sizeof(data));
         strncpy(data, buf, sizeof(data));
 
         msg.cmd = USER_EVENT;
@@ -59,47 +71,45 @@ void serverChat(const char *addr)
     sin.sin_port = htons(PORT);
     sin.sin_addr.s_addr = inet_addr(addr);
     
-    msgQueue<chatMsg> msgQue;
-    chatMsg cmd;
+    int sockEvent;
+    int sockState;
 
-    SocketService::socketEvent sockEvent;
-    Socket::socketState sockState;
-
+    chatMsg msg;
+    
     TCPServSocket* sock = new TCPServSocket();
 
-    sock.open(&sin);
+    sock->open(&sin);
 
     while(true){
         msgQue.wait();
         while(!msgQue.empty()){
-            cmd = msgQue.qetQ();
+            msg = msgQue.qetQ();
             sockState = sock->getState();
-            switch(cmd.cmdtype){
+            switch(msg.cmd){
                 case USER_EVENT:
                     switch(sockState){
                         case ESTABLISHED:
-                            sock.send(cmd->data, strlen(cmd->data));
+                            sock->Send(msg.cmd_msg.data, strlen(msg.cmd_msg.data));
 
                         case CLOSED:
                         case LISTEN:
                         case CONNECT:
                         case CLOSING:
-                        case default:
-                            pritnf("RX user event in Error state");
-                            free(cmd->data);
+                            printf("RX user event in Error state");
+                            free(msg.cmd_msg.data);
                             break;
 
                     }
                 case NETWORK_EVENT:
-                    sockEvent = cmd->cmd_msg.netEvent;         
+                    sockEvent = msg.cmd_msg.netEvent;         
                     switch(sockState){
                         case CLOSED:
-                            if (sockEvent & READ_EVNET){
+                            if (sockEvent & READ_EVENT){
 
-                            }else if (sockEvent & WRITE_EVNET){
+                            }else if (sockEvent & WRITE_EVENT){
 
 
-                            }else if (sockEvent & EXCEPT_EVNET){
+                            }else if (sockEvent & EXCEPT_EVENT){
 
                             } else {
                                 printf("CLOSED state wrong event");
@@ -108,16 +118,16 @@ void serverChat(const char *addr)
 
 
                         case LISTEN:
-                            if (sockEvent & READ_EVNET){
-                                sock->accept();
-                                sock->setCallback(sendEvent)
+                            if (sockEvent & READ_EVENT){
+                                sock->Accept();
+                                sock->setCallback(sendEvent);
 
-                            }else if (sockEvent & WRITE_EVNET){
+                            }else if (sockEvent & WRITE_EVENT){
                                 printf("LISTEN state WRITE wrong event");
 
 
-                            }else if (sockEvent & EXCEPT_EVNET){
-                                sock->close();
+                            }else if (sockEvent & EXCEPT_EVENT){
+                                sock->Close();
 
                             } else {
                                 printf("LISTEN state wrong event");
@@ -125,24 +135,24 @@ void serverChat(const char *addr)
                             break;
 
                         case CONNECT:
-                            if (sockEvent & READ_EVNET){
+                            if (sockEvent & READ_EVENT){
 
-                            }else if (sockEvent & WRITE_EVNET){
+                            }else if (sockEvent & WRITE_EVENT){
 
 
-                            }else if (sockEvent & EXCEPT_EVNET){
+                            }else if (sockEvent & EXCEPT_EVENT){
 
                             } else {
                                 printf("CONNECT state wrong event");
                             }
                             break;
                         case ESTABLISHED:
-                            if (sockEvent & READ_EVNET){
+                            if (sockEvent & READ_EVENT){
 
-                            }else if (sockEvent & WRITE_EVNET){
+                            }else if (sockEvent & WRITE_EVENT){
 
 
-                            }else if (sockEvent & EXCEPT_EVNET){
+                            }else if (sockEvent & EXCEPT_EVENT){
 
                             } else {
                                 printf("ESTABLISHED state wrong event");
@@ -150,19 +160,16 @@ void serverChat(const char *addr)
                             break;
 
                         case CLOSING:
-                            if (sockEvent & READ_EVNET){
+                            if (sockEvent & READ_EVENT){
 
-                            }else if (sockEvent & WRITE_EVNET){
+                            }else if (sockEvent & WRITE_EVENT){
 
 
-                            }else if (sockEvent & EXCEPT_EVNET){
+                            }else if (sockEvent & EXCEPT_EVENT){
 
                             } else {
                                 printf("CLOSING state wrong event");
                             }
-                            break;
-                        case default:
-                            printf("RX user event in Error state");
                             break;
 
                     }

@@ -9,7 +9,7 @@ public:
     CondMgr();
     ~CondMgr();
     void wait();
-    bool wait_timeout(long waitTime);
+    void wait_timeout(long waitTime);
     void signal();
 };
 

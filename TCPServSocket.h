@@ -8,17 +8,17 @@ class TCPServSocket : public Socket
 	sockaddr_in cli;
 	int cliLen = sizeof(cli);
 	void (*callback)(int);
-    SockService* sockService;
+    	SocketService* sockService;
 public:
-	TCPServSocket(
-        sockService = SocketService::getInstance();
-    );
-	~TCPServSocket();
-	virtual bool open(sockaddr_in* sin);
-	virtual void close();
-	virtual void notifyEv(int);
-	int send(char*, int);
-	int recv(char*);
-	bool accept();
-	void setCallback();
+	TCPServSocket(){
+        	sockService = SocketService::getInstance();
+    	}	
+	~TCPServSocket(){}
+	bool open(sockaddr_in* sin);
+	void Close();
+	void notify(int);
+	int Send(char*, int);
+	int Recv(char*, int);
+	bool Accept();
+	void setCallback(void (*)(int));
 };

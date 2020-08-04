@@ -1,25 +1,40 @@
 #include "socketservice.h"
 #include <pthread.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include <cstring>
+#include <list>
+
+//using namespace std;
+
+void *SocketService::threadImp(void* param)
+{
 	
+	SocketService* instance = static_cast<SocketService*>(param);
+	return instance->run();	
+}
+
 SocketService::SocketService()
 {
-	if(pthread_attr_init(&attr) != 0){
-		pritnf("Fail to pthread_attr\n");
-	}
-	if(pthread_create(&thr, &attr, threadImp, NULL) != 0){
+//	if(pthread_attr_init(&attr) != 0){
+//		pritnf("Fail to pthread_attr\n");
+//	}
+	if(pthread_create(&thr, NULL, threadImp, reinterpret_cast<void*>(this)) != 0){
 		printf("Fail to pthread_create\n");
 	}
 
-	stReadFS = stWriteFS = stEceptFS = 0;
-	stReadFSTmp = stWriteFSTmp = stEceptFSTmp = 0;
+	//stReadFS = stWriteFS = stEceptFS = 0;
+	//stReadFSTmp = stWriteFSTmp = stEceptFSTmp = 0;
 
 	if (pipe(mctrlPipe) <0){
-		printf("Fial to create pipe\m");
+		printf("Fial to create pipe\n");
 	}
-	FD_SET(mctrlPipe[0], EVENT_READ);
+	//FD_SET(mctrlPipe[0], READ_EVENT);
 
 }
-static SocketService* SocketService::getInstance()
+
+SocketService* SocketService::getInstance()
 {
 	static SocketService* sockService = NULL;
 	if(sockService == NULL){
@@ -27,69 +42,80 @@ static SocketService* SocketService::getInstance()
 	}
 	return sockService;
 }
-SocketService::~SocketService(){}
+//SocketService::~SocketService(){}
 
-bool SocketService::attachHandle(int handle, SockInfo* sockInfo)
+bool SocketService::attachHandle(int handle, Socket* socket)
 {
-	char ch = "1";
+	const char ch = 'A' ;
+	SockInfo sInfo;
+
+	sInfo.sockFd = handle;
+	sInfo.socket = socket;	
 	
-	sockInfo.push_back(sockInfo);
+	sockList.push_back(sInfo);
 
-	FD_SET(handle, EVENT_READ);
-	FD_SET(handle, EVENT_WRITE);
-	FD_SET(handle, EVENT_EXCEPT);
+	//FD_SET(handle, READ_EVENT);
+	//FD_SET(handle, WRITE_EVENT);
+	//FD_SET(handle, EXCEPT_EVENT);
 
-	if (handle > maxFD){
-			pritnf("handle is bigger than maxFD(%d)\n", maxFD);
-			maxFD = handle;
+	if (handle > maxFd){
+			printf("handle is bigger than maxFD(%d)\n", maxFd);
+			maxFd = handle;
+			return false;
 	}
-	write(mcntlPipe[1], &ch, 1);
-
+	write(mctrlPipe[1], (void*)&ch, 1);
+	
+	return true;
 
 }
-void SocketService::detachHandle(int)
+
+void SocketService::detachHandle(int handle)
+{
+	printf("detach handle\n");
+}
+
+void SocketService::updateEvent(int event)
 {
 
-}
-void SocketService::updateFD()
-{
-
+	printf("updata event\n");
 }
 
-void SocketService::sendNotify(void* pInstance)
+void SocketService::sendNotify(Socket* pInstance, int event)
 {
-	pInstance->notify();
+	pInstance->notify(event);
 }
-void *SocketService::threadImp(void* data)
+
+void* SocketService::run(void)
 {
 	int nRes;
 	int maxSignal;
 	int nFD;
 
 	for(;;){
-		memcopy(stReadFSTmp,stReadFS);
-		memcopy(stwriteFSTmp,stReadFS);
-		memcopy(stExceptFSTmp,stReadFS);
+		memcpy(&stReadFSTmp,&stReadFS, sizeof(stReadFS));
+		memcpy(&stWriteFSTmp,&stWriteFS, sizeof(stWriteFS));
+		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));
 
-		nRes = select(maxFD+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp);
+		nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, 0);
 		maxSignal = nRes;
 
-		list<sockInfo>::iterator itr;
-
-		for(itr = sockInfo.begin(); itr!= sockInfo.end(); itr++){
-			nFD = *iter->sockFd;
+		std::list<SockInfo>::iterator itr;
+		
+		for(itr = sockList.begin(); itr!= sockList.end(); itr++){
+			SockInfo sockinfo = *itr;
+			nFD = sockinfo.sockFd;
 			if( FD_ISSET(nFD, &stReadFSTmp)){
-				sendNotify(EVENT_READ);
+				sendNotify(sockinfo.socket, READ_EVENT);
 				maxSignal--;
 			}
 
 			if( FD_ISSET(nFD, &stReadFSTmp)){
-				sendNotify(EVENT_WRITE);
+				sendNotify(sockinfo.socket, WRITE_EVENT);
 				maxSignal--;
 			}
 
 			if( FD_ISSET(nFD, &stReadFSTmp)){
-				sendNotify(EVENT_EXCEPT);
+				sendNotify(sockinfo.socket, EXCEPT_EVENT);
 				maxSignal--;
 			}
 			if (maxSignal <= 0){
@@ -99,5 +125,5 @@ void *SocketService::threadImp(void* data)
 	}
 
 }
-
+	return NULL;
 }

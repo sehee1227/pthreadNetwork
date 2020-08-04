@@ -2,36 +2,49 @@
 #define _SOCKETSERVICE_H
 #include <list>
 #include <pthread.h>
+#include <sys/select.h>
+
+#include "Socket.h"
+
+enum socketEvent : int{
+	READ_EVENT,
+	WRITE_EVENT,
+	EXCEPT_EVENT
+};
 
 class SocketService 
 {
+
 	struct SockInfo{
 		int sockFd; 	
-    	void* pInstance;
-	}
-	list<SockInfo> sockInfo;
+		Socket* socket;
+	};
+	std::list<SockInfo> sockList;
 	pthread_t sockServThread_t;
 
 	int mctrlPipe[2];
 	int	mcntlEvent;
 	int maxFd;
+	
+	pthread_t thr;
 
 	fd_set	stReadFS;
 	fd_set	stWriteFS;
-	fd_set	stEceptFS;
+	fd_set	stExceptFS;
 
 	fd_set	stReadFSTmp;
 	fd_set	stWriteFSTmp;
-	fd_set	stEceptFSTmp;
+	fd_set	stExceptFSTmp;
 public:
 	SocketService();
 	static SocketService* getInstance();
 	~SocketService();
 	bool attachHandle(int, Socket*);
 	void detachHandle(int);
-	void updateFD();
-	void sendNotify()
-	void* threadImp(void*);
-
-}
+	void updateEvent(int);
+	void sendNotify(Socket*, int);
+	static void* threadImp(void*);
+	//void run_imp(SocketService*);
+	void* run(void);
+};
 #endif

@@ -3,6 +3,7 @@
 #include <string.h>
 
 extern void clientChat(const char*);
+extern void serverChat(const char*);
 
 int main(int argc, char* argv[])
 {

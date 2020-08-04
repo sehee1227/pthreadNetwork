@@ -1,18 +1,44 @@
-#ifndef _MSGQURUR_H
-#define _MSGQURUR_H
+#ifndef _MSGQUEUE_H
+#define _MSGQUEUE_H
+
+#include <list>
+#include "cond.h"
 
 template<typename T>
 class msgQueue
 {
-	list<T> msglist;
+	std::list<T> msglist;
 	CondMgr cond;
+
 public:
-	msgQueue();
-	~msgQueue();
-	T qetQ();
-	void putQ(T data);
-	void wait();
-	empty();
-}
+//	msgQue(){}
+	~msgQueue()
+	{
+	while(!msglist.empty()){
+		msglist.pop_front();
+	}
+	};
+
+T qetQ()
+{	
+	T data = msglist.front();
+	msglist.pop_front();
+	return data;
+};
+void putQ(T data)
+{
+	msglist.push_back(data);
+	cond.signal();
+};
+void wait()
+{
+	cond.wait();
+};
+
+bool empty()
+{
+	return 	msglist.empty();
+};
+};
 
 #endif

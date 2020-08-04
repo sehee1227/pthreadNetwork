@@ -35,7 +35,7 @@ void CondMgr::wait()
 	pthread_mutex_unlock((pthread_mutex_t*)m_pMutex);
 }
 
-bool CondMgr::wait_timeout(long waitTime)
+void CondMgr::wait_timeout(long waitTime)
 {
 	struct timespec ts;
 	struct timeval tv;

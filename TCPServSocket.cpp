@@ -1,33 +1,35 @@
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include "TCPServSocket.h"
 
 bool TCPServSocket::open(sockaddr_in* sin)
 {
-	
 	socketFD = socket();
 	bind();
 
 	setState(LISTEN);
-	
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(READ_EVNET | EXCEPT_EVENT);
+	sockService->updateEvent(READ_EVENT | EXCEPT_EVENT);
 }
 
-bool TCPServSocket::accept()
+bool TCPServSocket::Accept()
 {
 	cliFD = accept();
 	setState(ESTABLISHED);
 
 }
 
-int TCPServSocket::send(char* pBuf, int len)
+int TCPServSocket::Send(char* pBuf, int len)
 {
-	int nsentByte = send(cliFD, (void*)pBuf, len);
+	int nsentByte = send(cliFD, (void*)pBuf, len, 0);
 
 	return nsentByte;
 
 }
 
-int TCPServSocket::recv(char* pBuf)
+int TCPServSocket::Recv(char* pBuf, int len)
 {
 	int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
 
@@ -35,16 +37,16 @@ int TCPServSocket::recv(char* pBuf)
 
 }
 
-void TCPServSocket::notifyEv(socketEvent)
+void TCPServSocket::notify(int socketEvent)
 {
-	pritnf("Send notify\n");
+	printf("Send notify\n");
 	if (callback != NULL){
 		callback(socketEvent);
 	}
 	return;
 }
 
-void TCPServSocket::setCallback(cbFunc){
+void TCPServSocket::setCallback(void (*cbFunc)(int)){
 	callback = cbFunc;
 	return;
 }
