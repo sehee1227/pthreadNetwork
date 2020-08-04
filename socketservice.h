@@ -7,9 +7,9 @@
 #include "Socket.h"
 
 enum socketEvent : int{
-	READ_EVENT,
-	WRITE_EVENT,
-	EXCEPT_EVENT
+	READ_EVENT = 0x01,
+	WRITE_EVENT = 0x02,
+	EXCEPT_EVENT = 0x04,
 };
 
 class SocketService 

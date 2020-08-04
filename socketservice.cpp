@@ -17,13 +17,6 @@ void *SocketService::threadImp(void* param)
 
 SocketService::SocketService()
 {
-//	if(pthread_attr_init(&attr) != 0){
-//		pritnf("Fail to pthread_attr\n");
-//	}
-	if(pthread_create(&thr, NULL, threadImp, reinterpret_cast<void*>(this)) != 0){
-		printf("Fail to pthread_create\n");
-	}
-
 	FD_ZERO(&stReadFS);
 	FD_ZERO(&stWriteFS);
 	FD_ZERO(&stExceptFS);
@@ -37,6 +30,11 @@ SocketService::SocketService()
 	}
 	FD_SET(mctrlPipe[0], &stReadFS);
 
+//	if(pthread_attr_init(&attr) != 0){
+//		pritnf("Fail to pthread_attr\n");
+	if(pthread_create(&thr, NULL, threadImp, reinterpret_cast<void*>(this)) != 0){
+		printf("Fail to pthread_create\n");
+	}
 }
 
 SocketService* SocketService::getInstance()
@@ -93,20 +91,22 @@ void SocketService::updateEvent(int handle, int event)
 
 	if (event & READ_EVENT){
 		FD_SET(handle, &stReadFS);
+	printf("updata READ event:%x\n", event);
 	}
 
 	FD_CLR(handle, &stWriteFS);
 	if (event & WRITE_EVENT){
 		FD_SET(handle, &stWriteFS);
+	printf("updata WRITE event:%x\n", event);
 	}
 
 	FD_CLR(handle, &stExceptFS);
 	if (event & EXCEPT_EVENT){
 		FD_SET(handle, &stExceptFS);
+	printf("updata EXCEPT event:%x\n", event);
 	}
 
 	write(mctrlPipe[1], (void*)&ch, 1);
-	printf("updata event:%x\n", event);
 }
 
 void SocketService::sendNotify(Socket* pInstance, int event)
