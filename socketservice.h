@@ -5,6 +5,7 @@
 #include <sys/select.h>
 
 #include "Socket.h"
+#include "cond.h"
 
 enum socketEvent : int{
 	READ_EVENT = 0x01,
@@ -25,6 +26,8 @@ class SocketService
 	int mctrlPipe[2];
 	int	mcntlEvent;
 	int maxFd;
+
+	CondMgr sockCond;
 	
 	pthread_t thr;
 

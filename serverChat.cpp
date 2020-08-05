@@ -11,9 +11,9 @@
 #include "TCPServSocket.h"
 
 #define PORT 9000
-#define RECBUF_SIZE 1024
+#define RECBUF_SIZE 2048 
 
-char recBuf[RECBUF_SIZE];
+char recBuf[RECBUF_SIZE+1];
 
 struct chatMsg
 {
@@ -42,6 +42,7 @@ void sendEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
+    printf("sendEvent: %d\n", sockEvent);
     msgQue.putQ(msg);
 }
 
@@ -72,7 +73,8 @@ void serverChat(const char *addr)
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(PORT);
-    sin.sin_addr.s_addr = inet_addr(addr);
+    //sin.sin_addr.s_addr = inet_addr(addr);
+    sin.sin_addr.s_addr = htonl(INADDR_ANY);
     
     int sockEvent;
     int sockState;
@@ -84,12 +86,15 @@ void serverChat(const char *addr)
     TCPServSocket* sock = new TCPServSocket();
 
     sock->Open(&sin);
+    sock->setCallback(sendEvent);
 
     while(true){
         msgQue.wait();
         while(!msgQue.empty()){
             msg = msgQue.qetQ();
+	    printf("get msg q, msg.cmd:%d, msg.cmd_msg.netEvent:%d\n", msg.cmd, msg.cmd_msg.netEvent);
             sockState = sock->getState();
+	    printf("socket state: %d\n", sockState);
             switch(msg.cmd){
                 case USER_EVENT:
                     switch(sockState){
@@ -125,8 +130,9 @@ void serverChat(const char *addr)
                         case LISTEN:
                             if (sockEvent & READ_EVENT){
                                 sock->Accept();
-                                sock->setCallback(sendEvent);
+                                //sock->setCallback(sendEvent);
 
+                                printf("LISTEN state READ  event");
                             }else if (sockEvent & WRITE_EVENT){
                                 printf("LISTEN state WRITE wrong event");
 
@@ -142,6 +148,7 @@ void serverChat(const char *addr)
                         case CONNECT:
                             if (sockEvent & READ_EVENT){
 
+                                printf("Connect state READ  event");
 
                             }else if (sockEvent & WRITE_EVENT){
 
@@ -156,6 +163,7 @@ void serverChat(const char *addr)
                             if (sockEvent & READ_EVENT){
                                 recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
                                 recBuf[recvCnt] = '\0';
+                                printf("serverChat recvCnt: %d\n", recvCnt);
                                 printf("%s", recBuf);
 
                             }else if (sockEvent & WRITE_EVENT){

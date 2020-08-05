@@ -38,7 +38,7 @@ public:
 	}
 	void notify(int socketEvent)
 	{
-		printf("Send notify\n");
+		printf("Socket.h Send notify handle: %d, event:%d\n",socketFD, socketEvent);
 		if (callback != NULL){
 			callback(socketEvent);
 		}

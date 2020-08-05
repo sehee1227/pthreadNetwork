@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <unistd.h>
 
 extern void clientChat(const char*);
 extern void serverChat(const char*);
@@ -11,7 +12,7 @@ int main(int argc, char* argv[])
     const char* client = "CLIENT";
     char buf[16] = {0,};
     int i = 0;
-
+    
     if (argc > 1){
         while(argv[1][i]){
             buf[i] = toupper(argv[1][i]);

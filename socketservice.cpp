@@ -5,6 +5,7 @@
 #include <sys/select.h>
 #include <cstring>
 #include <list>
+#include <fcntl.h>
 
 //using namespace std;
 
@@ -24,10 +25,30 @@ SocketService::SocketService()
 	FD_ZERO(&stReadFSTmp);
 	FD_ZERO(&stWriteFSTmp);
 	FD_ZERO(&stExceptFSTmp);
-
-	if (pipe(mctrlPipe) <0){
-		printf("Fial to create pipe\n");
+	
+	pipe(mctrlPipe);
+	if (pipe(mctrlPipe) < 0){
+		printf("fail to open Pipe\n");
 	}
+	if (mctrlPipe[0] != -1){
+		int flag = fcntl(mctrlPipe[0], F_GETFL, 0);
+		flag |= O_NONBLOCK;
+		fcntl(mctrlPipe[0], F_SETFL, flag);
+	}
+	if (mctrlPipe[1] != -1){
+		int flag = fcntl(mctrlPipe[1], F_GETFL, 0);
+		flag |= O_NONBLOCK;
+		fcntl(mctrlPipe[1], F_SETFL, flag);
+	}
+
+/*
+	char ch[4] = "AA" ;
+	char buf[4] = {0,};
+	pipe(mctrlPipe);
+	write(mctrlPipe[1], ch, 2);
+	read(mctrlPipe[0], buf, 2);
+	printf("SocketService read on mctrlPipe[0](%d):%s\n",mctrlPipe[0], buf);
+*/	
 	FD_SET(mctrlPipe[0], &stReadFS);
 
 //	if(pthread_attr_init(&attr) != 0){
@@ -84,7 +105,8 @@ void SocketService::detachHandle(int handle)
 
 void SocketService::updateEvent(int handle, int event)
 {
-	const char ch = 'A' ;
+	char ch[4] = "AA" ;
+	char buf[4] = {0,};
 
 	FD_CLR(handle, &stReadFS);
 	FD_SET(mctrlPipe[0], &stReadFS);
@@ -106,7 +128,13 @@ void SocketService::updateEvent(int handle, int event)
 	printf("updata EXCEPT event:%x\n", event);
 	}
 
-	write(mctrlPipe[1], (void*)&ch, 1);
+	int res;
+	res = write(mctrlPipe[1], &ch, 2);
+	{
+		printf("Res of write on mctrlPipe[1]:%d\n",res);
+	}
+	sockCond.signal();
+
 }
 
 void SocketService::sendNotify(Socket* pInstance, int event)
@@ -119,27 +147,30 @@ void* SocketService::run(void)
 	int nRes;
 	int maxSignal;
 	int nFD;
-
+	struct timeval tv;
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	
 	printf("start Socket Service thread\n");
+	sockCond.wait();
 
-	for(;;){
+	for(int i = 0;i < 10;i++){
 		memcpy(&stReadFSTmp,&stReadFS, sizeof(stReadFS));
 		memcpy(&stWriteFSTmp,&stWriteFS, sizeof(stWriteFS));
 		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));
-
-		FD_SET(mctrlPipe[0], &stReadFSTmp);
 		
+		FD_SET(mctrlPipe[0], &stReadFSTmp);
 		nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, 0);
+		//nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, &tv);
 		maxSignal = nRes;
 
+			printf("socet service thread maxSignal %d\n", maxSignal);
 		if( FD_ISSET(mctrlPipe[0], &stReadFSTmp)){
-			char ch[2] = {0,};
-			read(mctrlPipe[0], ch, 1);
+			char ch[4] = {0,};
+			read(mctrlPipe[0], ch, 2);
 			printf("RX CRTL msg(%s)\n", ch);
-
 			maxSignal--;
-		}		
-
+		}	
 		std::list<SockInfo>::iterator itr;
 		
 		for(itr = sockList.begin(); itr!= sockList.end(); itr++){
@@ -150,12 +181,12 @@ void* SocketService::run(void)
 				maxSignal--;
 			}
 
-			if( FD_ISSET(nFD, &stReadFSTmp)){
+			if( FD_ISSET(nFD, &stWriteFSTmp)){
 				sendNotify(sockinfo.socket, WRITE_EVENT);
 				maxSignal--;
 			}
 
-			if( FD_ISSET(nFD, &stReadFSTmp)){
+			if( FD_ISSET(nFD, &stExceptFSTmp)){
 				sendNotify(sockinfo.socket, EXCEPT_EVENT);
 				maxSignal--;
 			}
@@ -164,6 +195,7 @@ void* SocketService::run(void)
 			}
 		}
 	}
+	pthread_exit(0);
 	return NULL;
 }
 

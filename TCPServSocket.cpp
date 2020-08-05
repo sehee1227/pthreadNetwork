@@ -2,6 +2,9 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <string.h>
 
 #include "TCPServSocket.h"
 
@@ -17,9 +20,25 @@ TCPServSocket::~TCPServSocket()
 
 bool TCPServSocket::Open(sockaddr_in* sin)
 {
-	
+	struct sockaddr_in addr;
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(9000);
+
 	socketFD = socket(AF_INET, SOCK_STREAM, 0);
-	bind(socketFD, (struct sockaddr*)&sin, sizeof(sin));
+
+	int flag;
+	flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+
+	int nSockOpt;
+	nSockOpt = 1;
+	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &nSockOpt, sizeof(nSockOpt));
+	if(bind(socketFD, (struct sockaddr*)&addr, sizeof(addr))== -1){
+		printf("Fail to bind socketFD: %d\n", socketFD);
+	       fprintf(stderr, "bind error: %s\n", strerror(errno));
+	}
 
 	setState(LISTEN);
 	
@@ -34,6 +53,10 @@ bool TCPServSocket::Open(sockaddr_in* sin)
 bool TCPServSocket::Accept()
 {
 	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen );
+	if(cliFD == -1){
+		printf("Fail to accept: %d\n", socketFD);
+		fprintf(stderr, "accept error: %s\n", strerror(errno));
+	}
 	setState(ESTABLISHED);
 	return true;
 
@@ -49,8 +72,10 @@ int TCPServSocket::Send(char* pBuf, int len)
 
 int TCPServSocket::Recv(char* pBuf, int len)
 {
-	int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
-
+	int nrecvByte;
+       if (nrecvByte = recv(cliFD, (void*)pBuf, len, 0) == -1){
+	       fprintf(stderr, "recv error: %s\n", strerror(errno));
+       }
 	return nrecvByte;
 
 }
