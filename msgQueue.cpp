@@ -1,28 +1,38 @@
+#include "cond.h"
 
-msgQueue::~msgQueue()
+
+template<typename T>
+class msgQueue
 {
-	while(!msglist.empty()){
-		msgist.pop_front();
+	list<T> msglist;
+	CondMgr cond;
+public:
+	msgQueue(){}
+	~msgQueue()
+	{
+		while(!msglist.empty()){
+			msgist.pop_front();
+		}
 	}
-}
-T msgQueue::qetQ()
-{	
-	T data = msglist.front();
-	msglist.pop_front();
-	return data;
-}
-void msgQueue::putQ(T data)
-{
-	msglist.push_back(data);
-	cond.signal();
-}
-void msgQueue::wait()
-{
-	cond.wait();
-}
+	T qetQ()
+	{	
+		T data = msglist.front();
+		msglist.pop_front();
+		return data;
+	}
+	void putQ(T data)
+	{
+		msglist.push_back(data);
+		cond.signal();
+	}
+	void wait()
+	{
+		cond.wait();
+	}
 
-msgQueue::empty()
-{
-	msglist.empty();
-}
+	empty()
+	{
+		msglist.empty();
+	}
 	
+}

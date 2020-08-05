@@ -6,6 +6,7 @@
 #include <cstring>
 #include <list>
 #include <fcntl.h>
+#include <errno.h>
 
 //using namespace std;
 
@@ -26,7 +27,6 @@ SocketService::SocketService()
 	FD_ZERO(&stWriteFSTmp);
 	FD_ZERO(&stExceptFSTmp);
 	
-	pipe(mctrlPipe);
 	if (pipe(mctrlPipe) < 0){
 		printf("fail to open Pipe\n");
 	}
@@ -41,14 +41,6 @@ SocketService::SocketService()
 		fcntl(mctrlPipe[1], F_SETFL, flag);
 	}
 
-/*
-	char ch[4] = "AA" ;
-	char buf[4] = {0,};
-	pipe(mctrlPipe);
-	write(mctrlPipe[1], ch, 2);
-	read(mctrlPipe[0], buf, 2);
-	printf("SocketService read on mctrlPipe[0](%d):%s\n",mctrlPipe[0], buf);
-*/	
 	FD_SET(mctrlPipe[0], &stReadFS);
 
 //	if(pthread_attr_init(&attr) != 0){
@@ -66,7 +58,7 @@ SocketService* SocketService::getInstance()
 	}
 	return sockService;
 }
-//SocketService::~SocketService(){}
+SocketService::~SocketService(){}
 
 bool SocketService::attachHandle(int handle, Socket* socket)
 {
@@ -83,7 +75,6 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 			maxFd = handle;
 			return false;
 	}
-	// write(mctrlPipe[1], (void*)&ch, 1);
 	
 	return true;
 
@@ -130,8 +121,9 @@ void SocketService::updateEvent(int handle, int event)
 
 	int res;
 	res = write(mctrlPipe[1], &ch, 2);
-	{
-		printf("Res of write on mctrlPipe[1]:%d\n",res);
+	if (res <0){
+		printf("Pipe write fail on mctrlPipe[1]:%d\n",res);
+		fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}
 	sockCond.signal();
 
@@ -154,23 +146,22 @@ void* SocketService::run(void)
 	printf("start Socket Service thread\n");
 	sockCond.wait();
 
-	for(int i = 0;i < 10;i++){
+	for(;;){
 		memcpy(&stReadFSTmp,&stReadFS, sizeof(stReadFS));
 		memcpy(&stWriteFSTmp,&stWriteFS, sizeof(stWriteFS));
 		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));
 		
 		FD_SET(mctrlPipe[0], &stReadFSTmp);
 		nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, 0);
-		//nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, &tv);
 		maxSignal = nRes;
 
-			printf("socet service thread maxSignal %d\n", maxSignal);
 		if( FD_ISSET(mctrlPipe[0], &stReadFSTmp)){
 			char ch[4] = {0,};
 			read(mctrlPipe[0], ch, 2);
 			printf("RX CRTL msg(%s)\n", ch);
 			maxSignal--;
-		}	
+		}
+
 		std::list<SockInfo>::iterator itr;
 		
 		for(itr = sockList.begin(); itr!= sockList.end(); itr++){

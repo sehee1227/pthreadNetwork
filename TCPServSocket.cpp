@@ -18,26 +18,37 @@ TCPServSocket::~TCPServSocket()
    	printf("~TCPServSocket\n");
 }	
 
-bool TCPServSocket::Open(sockaddr_in* sin)
+bool TCPServSocket::Open(const char* addr, int port)
 {
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(9000);
+	struct sockaddr_in sin;
 
+    printf("addr: %s\n", addr);
+
+    memset(&sin, 0x00, sizeof(struct sockaddr_in));
+
+    sin.sin_family = AF_INET;
+    sin.sin_port = htons(port);
+    //sin.sin_addr.s_addr = inet_addr(addr);
+    sin.sin_addr.s_addr = htonl(INADDR_ANY);
+	
 	socketFD = socket(AF_INET, SOCK_STREAM, 0);
 
 	int flag;
 	flag = fcntl(socketFD, F_GETFL, 0);
 	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
-	int nSockOpt;
-	nSockOpt = 1;
+	int nSockOpt = 1;
 	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &nSockOpt, sizeof(nSockOpt));
-	if(bind(socketFD, (struct sockaddr*)&addr, sizeof(addr))== -1){
+	if(bind(socketFD, (struct sockaddr*)&sin, sizeof(sin))== -1){
 		printf("Fail to bind socketFD: %d\n", socketFD);
-	       fprintf(stderr, "bind error: %s\n", strerror(errno));
+	    fprintf(stderr, "bind error: %s\n", strerror(errno));
+		return false;
+	}
+
+	if (listen(socketFD, 5) <0){
+		printf("Fail to listen socketFD: %d\n", socketFD);
+	    fprintf(stderr, "listen error: %s\n", strerror(errno));
+		return false;
 	}
 
 	setState(LISTEN);
@@ -56,8 +67,10 @@ bool TCPServSocket::Accept()
 	if(cliFD == -1){
 		printf("Fail to accept: %d\n", socketFD);
 		fprintf(stderr, "accept error: %s\n", strerror(errno));
+		return false;
 	}
 	setState(ESTABLISHED);
+	sockService->updateEvent(socketFD, READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
 	return true;
 
 }

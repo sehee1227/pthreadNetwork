@@ -6,7 +6,6 @@
 enum socketState : int{
 		CLOSED,
 		LISTEN,
-		CONNECT,
 		ESTABLISHED,
 		CLOSING,
 };

@@ -15,7 +15,6 @@ enum socketEvent : int{
 
 class SocketService 
 {
-
 	struct SockInfo{
 		int sockFd; 	
 		Socket* socket;
@@ -28,7 +27,7 @@ class SocketService
 	int maxFd;
 
 	CondMgr sockCond;
-	
+
 	pthread_t thr;
 
 	fd_set	stReadFS;

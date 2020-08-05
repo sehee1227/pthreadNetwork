@@ -8,12 +8,12 @@
 
 #include "msgQueue.h"
 #include "socketservice.h"
-#include "TCPServSocket.h"
+#include "TCPCliSocket.h"
 
 #define PORT 9000
 #define RECBUF_SIZE 2048 
 
-char recBuf[RECBUF_SIZE+1];
+char recCliBuf[RECBUF_SIZE+1];
 
 struct chatMsg
 {
@@ -35,18 +35,18 @@ union cmd_msg{
     char* data;
 };
 
-msgQueue<chatMsg> msgQue;
+msgQueue<chatMsg> msgCliQue;
 
 
-void sendEvent(int  sockEvent){
+void sendCliEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
     printf("sendEvent: %d\n", sockEvent);
-    msgQue.putQ(msg);
+    msgCliQue.putQ(msg);
 }
 
-void* userThread(void* data)
+void* userCliThread(void* data)
 {
     chatMsg msg;
     char buf[128];
@@ -62,10 +62,10 @@ void* userThread(void* data)
 
         msg.cmd = USER_EVENT;
         msg.cmd_msg.data = data;
-        msgQue.putQ(msg);
+        msgCliQue.putQ(msg);
     }
 }
-void serverChat(const char *addr)
+void clientChat(const char *addr)
 {
     pthread_t thr;
     int sockEvent;
@@ -75,22 +75,22 @@ void serverChat(const char *addr)
 
     int recvCnt;
     
-    if(pthread_create(&thr, NULL, userThread, NULL) != 0){
+    if(pthread_create(&thr, NULL, userCliThread, NULL) != 0){
 		printf("Fail to pthread_create\n");
 	}
     
-    TCPServSocket* sock = new TCPServSocket();
+    TCPCliSocket* sock = new TCPCliSocket();
 
     if (sock->Open(addr, PORT) == false){
         printf("Fail to open\n");
         return;
     }
-    sock->setCallback(sendEvent);
+    sock->setCallback(sendCliEvent);
 
     while(true){
-        msgQue.wait();
-        while(!msgQue.empty()){
-            msg = msgQue.qetQ();
+        msgCliQue.wait();
+        while(!msgCliQue.empty()){
+            msg = msgCliQue.qetQ();
 	    printf("get msg q, msg.cmd:%d, msg.cmd_msg.netEvent:%d\n", msg.cmd, msg.cmd_msg.netEvent);
             sockState = sock->getState();
 	    printf("socket state: %d\n", sockState);
@@ -101,7 +101,6 @@ void serverChat(const char *addr)
                             sock->Send(msg.cmd_msg.data, strlen(msg.cmd_msg.data));
 
                         case CLOSED:
-                        case LISTEN:
                         case CLOSING:
                             printf("RX user event in Error state");
                             free(msg.cmd_msg.data);
@@ -125,30 +124,13 @@ void serverChat(const char *addr)
                             break;
 
 
-                        case LISTEN:
-                            if (sockEvent & READ_EVENT){
-                                sock->Accept();
-                                //sock->setCallback(sendEvent);
-
-                                printf("LISTEN state READ  event");
-                            }else if (sockEvent & WRITE_EVENT){
-                                printf("LISTEN state WRITE wrong event");
-
-
-                            }else if (sockEvent & EXCEPT_EVENT){
-                                sock->Close();
-
-                            } else {
-                                printf("LISTEN state wrong event");
-                            }
-                            break;
 
                         case ESTABLISHED:
                             if (sockEvent & READ_EVENT){
-                                recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
-                                recBuf[recvCnt] = '\0';
+                                recvCnt = sock->Recv(recCliBuf, RECBUF_SIZE);
+                                recCliBuf[recvCnt] = '\0';
                                 printf("serverChat recvCnt: %d\n", recvCnt);
-                                printf("%s", recBuf);
+                                printf("%s", recCliBuf);
 
                             }else if (sockEvent & WRITE_EVENT){
 
