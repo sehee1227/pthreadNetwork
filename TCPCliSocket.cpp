@@ -25,7 +25,7 @@ bool TCPCliSocket::Open(const char* addr, int port)
 
     printf("addr: %s\n", addr);
 
-    memset(&sin, 0x00, sizeof(struct sockaddr_in));
+    memset(&sin, 0x00, sizeof(sin));
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
@@ -40,7 +40,12 @@ bool TCPCliSocket::Open(const char* addr, int port)
 	if(connect(socketFD, (struct sockaddr*)&sin, sizeof(sin))== -1){
 		printf("Fail to connect socketFD: %d\n", socketFD);
 	    fprintf(stderr, "connect error: %s\n", strerror(errno));
-		return -1;
+		if (errno == EINPROGRESS){
+			sockService->updateEvent(socketFD, WRITE_EVENT | EXCEPT_EVENT);
+			setState(CONNECT);
+			return true;
+		}
+		return -false;
 	}
 
 	setState(ESTABLISHED);
@@ -54,6 +59,28 @@ bool TCPCliSocket::Open(const char* addr, int port)
 }
 
 
+bool TCPCliSocket::Connect()
+{
+	int error = 0;
+	socklen_t len = sizeof(error);
+
+    printf("TCP CONNECT");
+
+	if( getsockopt(socketFD, SOL_SOCKET, SO_ERROR, (void*)&error, &len) < 0){
+		printf("Fail to connect wait socketFD: %d\n", socketFD);
+	    fprintf(stderr, "connect wait error: %s\n", strerror(errno));
+		return false;
+	}
+
+	setState(ESTABLISHED);
+	
+	sockService->attachHandle(socketFD, this);
+	sockService->updateEvent(socketFD, READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+
+	printf("TCPClivSocket Open\n");
+	
+	return true;
+}
 
 int TCPCliSocket::Send(char* pBuf, int len)
 {

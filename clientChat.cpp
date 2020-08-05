@@ -123,7 +123,21 @@ void clientChat(const char *addr)
                             }
                             break;
 
+                        case CONNECT:
+                            if (sockEvent & READ_EVENT){
 
+
+                            }else if (sockEvent & WRITE_EVENT){
+                                sock->Connect();
+
+
+                            }else if (sockEvent & EXCEPT_EVENT){
+                                sock->Close();
+
+                            } else {
+                                printf("ESTABLISHED state wrong event");
+                            }
+                            break;
 
                         case ESTABLISHED:
                             if (sockEvent & READ_EVENT){

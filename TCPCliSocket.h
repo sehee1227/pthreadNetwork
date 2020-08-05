@@ -14,6 +14,7 @@ public:
 	TCPCliSocket();
 	~TCPCliSocket();
 	bool Open(const char *, int);
+	bool Connect();
 	void Close();
 	int Send(char*, int);
 	int Recv(char*, int);
