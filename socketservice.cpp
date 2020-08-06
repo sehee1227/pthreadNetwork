@@ -97,7 +97,6 @@ void SocketService::detachHandle(int handle)
 void SocketService::updateEvent(int handle, int event)
 {
 	char ch[4] = "AA" ;
-	char buf[4] = {0,};
 
 	FD_CLR(handle, &stReadFS);
 	FD_SET(mctrlPipe[0], &stReadFS);
@@ -139,9 +138,9 @@ void* SocketService::run(void)
 	int nRes;
 	int maxSignal;
 	int nFD;
-	struct timeval tv;
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
+	// struct timeval tv;
+	// tv.tv_sec = 1;
+	// tv.tv_usec = 0;
 	
 	printf("start Socket Service thread\n");
 	sockCond.wait();

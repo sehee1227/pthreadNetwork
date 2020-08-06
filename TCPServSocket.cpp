@@ -15,6 +15,8 @@ TCPServSocket::TCPServSocket()
 
 TCPServSocket::~TCPServSocket()
 {
+	close(cliFD);
+	close(socketFD);
    	printf("~TCPServSocket\n");
 }	
 
@@ -33,13 +35,13 @@ bool TCPServSocket::Open(const char* addr, int port)
 	
 	socketFD = socket(AF_INET, SOCK_STREAM, 0);
 
-	int flag;
-	flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-
 	int nSockOpt = 1;
-	setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &nSockOpt, sizeof(nSockOpt));
-	if(bind(socketFD, (struct sockaddr*)&sin, sizeof(sin))== -1){
+	if (setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &nSockOpt, sizeof(nSockOpt)) < 0) {
+		printf("Fail to setsockopt socketFD: %d\n", socketFD);
+	    fprintf(stderr, "setsockopt error: %s\n", strerror(errno));
+		return false;
+	}
+	if(bind(socketFD, (struct sockaddr*)&sin, sizeof(sin)) < 0){
 		printf("Fail to bind socketFD: %d\n", socketFD);
 	    fprintf(stderr, "bind error: %s\n", strerror(errno));
 		return false;
@@ -51,10 +53,14 @@ bool TCPServSocket::Open(const char* addr, int port)
 		return false;
 	}
 
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+	setState(ESTABLISHED);
+
 	setState(LISTEN);
-	
+
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, READ_EVENT | EXCEPT_EVENT);
+	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
 
 	printf("TCPServSocket Open\n");
 	
@@ -63,14 +69,15 @@ bool TCPServSocket::Open(const char* addr, int port)
 
 bool TCPServSocket::Accept()
 {
-	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen );
-	if(cliFD == -1){
+	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen);
+	if(cliFD < 0){
 		printf("Fail to accept: %d\n", socketFD);
 		fprintf(stderr, "accept error: %s\n", strerror(errno));
 		return false;
 	}
 	setState(ESTABLISHED);
-	sockService->updateEvent(socketFD, READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+
+	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
 	return true;
 
 }
@@ -85,12 +92,11 @@ int TCPServSocket::Send(char* pBuf, int len)
 
 int TCPServSocket::Recv(char* pBuf, int len)
 {
-	int nrecvByte;
-       if (nrecvByte = recv(cliFD, (void*)pBuf, len, 0) == -1){
-	       fprintf(stderr, "recv error: %s\n", strerror(errno));
-       }
+	int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
+	if (nrecvByte < 0){
+	   fprintf(stderr, "recv error: %s\n", strerror(errno));
+	}
 	return nrecvByte;
-
 }
 
 void TCPServSocket::Close()
@@ -100,16 +106,3 @@ void TCPServSocket::Close()
 	close(socketFD);
 
 }
-// void TCPServSocket::notify(int socketEvent)
-// {
-// 	printf("Send notify\n");
-// 	if (callback != NULL){
-// 		callback(socketEvent);
-// 	}
-// 	return;
-// }
-
-// void TCPServSocket::setCallback(void (*cbFunc)(int)){
-// 	callback = cbFunc;
-// 	return;
-// }

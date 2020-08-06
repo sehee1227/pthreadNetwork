@@ -15,13 +15,13 @@ TCPCliSocket::TCPCliSocket()
 
 TCPCliSocket::~TCPCliSocket()
 {
+	close(socketFD);
    	printf("~TCPServSocket\n");
 }	
 
 bool TCPCliSocket::Open(const char* addr, int port)
 {
 	struct sockaddr_in sin;
-    pthread_t thr;
 
     printf("addr: %s\n", addr);
 
@@ -33,10 +33,6 @@ bool TCPCliSocket::Open(const char* addr, int port)
 
 	socketFD = socket(AF_INET, SOCK_STREAM, 0);
 
-	int flag;
-	flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-
 	if(connect(socketFD, (struct sockaddr*)&sin, sizeof(sin))== -1){
 		printf("Fail to connect socketFD: %d\n", socketFD);
 	    fprintf(stderr, "connect error: %s\n", strerror(errno));
@@ -45,15 +41,17 @@ bool TCPCliSocket::Open(const char* addr, int port)
 			setState(CONNECT);
 			return true;
 		}
-		return -false;
+		return false;
 	}
 
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 	setState(ESTABLISHED);
 	
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+	sockService->updateEvent(socketFD, READ_EVENT | EXCEPT_EVENT);
 
-	printf("TCPClivSocket Open\n");
+	printf("TCPClivSocket ESTABLISHED\n");
 	
 	return true;
 }
@@ -64,20 +62,24 @@ bool TCPCliSocket::Connect()
 	int error = 0;
 	socklen_t len = sizeof(error);
 
-    printf("TCP CONNECT");
+    printf("TCPClivSocket CONNECT");
 
 	if( getsockopt(socketFD, SOL_SOCKET, SO_ERROR, (void*)&error, &len) < 0){
 		printf("Fail to connect wait socketFD: %d\n", socketFD);
 	    fprintf(stderr, "connect wait error: %s\n", strerror(errno));
+	    	sockService->updateEvent(socketFD, EXCEPT_EVENT);
 		return false;
 	}
+
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
 	setState(ESTABLISHED);
 	
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
 
-	printf("TCPClivSocket Open\n");
+	printf("TCPClivSocket ESTABLISHED\n");
 	
 	return true;
 }
@@ -92,8 +94,8 @@ int TCPCliSocket::Send(char* pBuf, int len)
 
 int TCPCliSocket::Recv(char* pBuf, int len)
 {
-	int nrecvByte;
-       if (nrecvByte = recv(socketFD, (void*)pBuf, len, 0) == -1){
+	int nrecvByte= recv(socketFD, (void*)pBuf, len, 0);
+       if (nrecvByte < 0){
 	       fprintf(stderr, "recv error: %s\n", strerror(errno));
        }
 	return nrecvByte;

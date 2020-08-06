@@ -7,7 +7,7 @@
 #include "Socket.h"
 #include "cond.h"
 
-enum socketEvent : int{
+enum socketEvent {
 	READ_EVENT = 0x01,
 	WRITE_EVENT = 0x02,
 	EXCEPT_EVENT = 0x04,

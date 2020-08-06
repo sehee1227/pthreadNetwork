@@ -5,11 +5,11 @@
 #include <unistd.h>
 
 #include "Socket.h"
-#include "socketservice.h"
 
 class TCPCliSocket : public Socket
 {
-    SocketService* sockService;
+	int socketFD;
+	SocketService* sockService;
 public:
 	TCPCliSocket();
 	~TCPCliSocket();

@@ -1,9 +1,9 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-#include <stdio.h>
+#include "socketservice.h"
 
-enum socketState : int{
+enum socketState {
 		CLOSED,
 		LISTEN,
 		CONNECT,
@@ -12,9 +12,6 @@ enum socketState : int{
 };
 class Socket
 {
-
-
-
 	int 	state;
 	void (*callback)(int);
 
@@ -26,7 +23,9 @@ class Socket
 	fd_set 	writeFdTmp;
 	fd_set	exceptFdTmp;
 protected:
-		int socketFD;
+		// int socketFD;
+		int eventState;
+		// SocketService* sockService;
 public:
 	void setState(int state)
 	{
@@ -38,7 +37,6 @@ public:
 	}
 	void notify(int socketEvent)
 	{
-		printf("Socket.h Send notify handle: %d, event:%d\n",socketFD, socketEvent);
 		if (callback != NULL){
 			callback(socketEvent);
 		}
@@ -49,6 +47,11 @@ public:
 		callback = cbFunc;
 		return;
 	}
+
+	// void setEvent(int event)
+	// {
+	// 	sockService->updateEvent(socketFD, event);
+	// }
 };
 
 #endif 
