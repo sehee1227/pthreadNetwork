@@ -54,8 +54,8 @@ bool TCPServSocket::Open(const char* addr, int port)
 		return false;
 	}
 
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+	// int flag = fcntl(socketFD, F_GETFL, 0);
+	// fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 	setState(ESTABLISHED);
 
 	setState(LISTEN);
@@ -76,6 +76,9 @@ bool TCPServSocket::Accept()
 		fprintf(stderr, "accept error: %s\n", strerror(errno));
 		return false;
 	}
+
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 	setState(ESTABLISHED);
 
 	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
@@ -102,6 +105,7 @@ int TCPServSocket::Recv(char* pBuf, int len)
 
 void TCPServSocket::Close()
 {
+	sockService->updateEvent(socketFD, 0);
 	sockService->detachHandle(socketFD);
 	close(cliFD);
 	close(socketFD);

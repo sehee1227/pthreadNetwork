@@ -106,6 +106,7 @@ int TCPCliSocket::Recv(char* pBuf, int len)
 
 void TCPCliSocket::Close()
 {
+	sockService->updateEvent(socketFD, 0);
 	sockService->detachHandle(socketFD);
 	close(socketFD);
 
