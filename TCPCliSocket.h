@@ -8,7 +8,7 @@
 
 class TCPCliSocket : public Socket
 {
-	int socketFD;
+	// int socketFD;
 	SocketService* sockService;
 public:
 	TCPCliSocket();

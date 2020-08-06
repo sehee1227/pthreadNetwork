@@ -8,7 +8,7 @@
 
 class TCPServSocket : public Socket
 {
-	int socketFD;
+	// int socketFD;
 	int cliFD;
 	sockaddr_in cli;
 	int cliLen = sizeof(sockaddr_in);

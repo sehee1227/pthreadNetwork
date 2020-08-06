@@ -26,8 +26,9 @@ struct chatMsg
 
 enum cmdtype
 {
-    NETWORK_EVENT,
     USER_EVENT,
+    NETWORK_EVENT,
+
 };
 
 union cmd_msg{
@@ -75,6 +76,7 @@ void serverChat(const char *addr)
     int sockState;
     int recvCnt;
     int sendByte;
+    int datalen;
 
     chatMsg msg;
 
@@ -148,10 +150,9 @@ void serverChat(const char *addr)
                 printf("State : ESTABLISHED\n");  
                 switch(msg.cmd){
                     case USER_EVENT:
-                        int datalen = (int)strlen(msg.cmd_msg.data);
+                        datalen = (int)strlen(msg.cmd_msg.data);
                         sendByte  = sock->Send(msg.cmd_msg.data, datalen);
                         printf("serverChat Send %d bytes\n", sendByte);
-
                         // if(sendByte < datalen){
                         //     int size = datalen-sendByte;
                         //     char* buf = (char*) malloc((size));
@@ -162,10 +163,8 @@ void serverChat(const char *addr)
                         //     printf("ClientChat pendServQ push_back %d bytes\n", (datalen-sendByte));
                         //     // sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                         // }
-
                         free(msg.cmd_msg.data);
                         break;
-
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){

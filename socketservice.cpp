@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <errno.h>
 
-//using namespace std;
 
 void *SocketService::threadImp(void* param)
 {

@@ -1,7 +1,7 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-#include "socketservice.h"
+// #include "socketservice.h"
 
 enum socketState {
 		CLOSED,
@@ -23,10 +23,14 @@ class Socket
 	fd_set 	writeFdTmp;
 	fd_set	exceptFdTmp;
 protected:
-		// int socketFD;
+		int socketFD;
 		int eventState;
 		// SocketService* sockService;
 public:
+	Socket()
+	{
+		// sockService = SocketService::getInstance();
+	}
 	void setState(int state)
 	{
 		this->state = state;
