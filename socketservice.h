@@ -7,6 +7,8 @@
 #include "Socket.h"
 #include "cond.h"
 
+class Socket;
+
 enum socketEvent {
 	READ_EVENT = 0x01,
 	WRITE_EVENT = 0x02,

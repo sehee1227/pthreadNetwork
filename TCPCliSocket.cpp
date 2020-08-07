@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include "socketservice.h"
 #include "TCPCliSocket.h"
 
 
@@ -113,3 +112,4 @@ void TCPCliSocket::Close()
 	close(socketFD);
 
 }
+

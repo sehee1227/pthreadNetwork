@@ -12,7 +12,9 @@ class TCPServSocket : public Socket
 	int cliFD;
 	sockaddr_in cli;
 	int cliLen = sizeof(sockaddr_in);
-	SocketService* sockService;
+
+	// SocketService* sockService;
+
 public:
 	TCPServSocket();
 	~TCPServSocket();
@@ -21,5 +23,10 @@ public:
 	int Send(char*, int);
 	int Recv(char*, int);
 	bool Accept();
+	void setEvent(int event)
+	{
+		sockService->updateEvent(socketFD, event);
+	}
+
 
 };

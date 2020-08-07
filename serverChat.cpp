@@ -9,6 +9,7 @@
 #include "msgQueue.h"
 #include "socketservice.h"
 #include "TCPServSocket.h"
+#include "datalink.h"
 
 #define PORT 9000
 #define RECBUF_SIZE 2048 
@@ -81,6 +82,7 @@ void serverChat(const char *addr)
     int datalen;
 
     chatMsg msg;
+    DataLink sdlink;
 
     std::list<char*> pendServQ;
     
@@ -114,6 +116,9 @@ void serverChat(const char *addr)
                         sock->Close();
                     }
                 }
+                sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+
+                free(msg.cmd_msg.data);
                 printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
@@ -132,7 +137,6 @@ void serverChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                             printf("ClientChat user event in CLOSED, Error \n");
-                            free(msg.cmd_msg.data);
                             break;
                     case NETWORK_EVENT:
                             printf("ClientChat Nework event in CLOSED, Error \n");    
@@ -143,7 +147,6 @@ void serverChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                             printf("ClientChat user event in LISTEN, Error \n");
-                            free(msg.cmd_msg.data);
                             break;
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
@@ -165,21 +168,22 @@ void serverChat(const char *addr)
                 printf("State : ESTABLISHED\n");  
                 switch(msg.cmd){
                     case USER_EVENT:
-                        datalen = (int)strlen(msg.cmd_msg.data);
-                        sendByte  = sock->Send(msg.cmd_msg.data, datalen);
-                        printf("serverChat Send %d bytes\n", sendByte);
-                        // if(sendByte < datalen){
-                        //     int size = datalen-sendByte;
-                        //     char* buf = (char*) malloc((size));
-                        //     for (int i = 0; i<size; i++){
-                        //         *(buf+i) = *(msg.cmd_msg.data + sendByte + i); 
-                        //     }
-                        //     pendServQ.push_back(buf);
-                        //     printf("ClientChat pendServQ push_back %d bytes\n", (datalen-sendByte));
-                        //     // sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                        // }
-                        free(msg.cmd_msg.data);
+                    {
+                        datalen = sdlink.getSize();
+                        char* buf = (char*)malloc(datalen);
+                        sdlink.get(datalen, buf);
+                        sendByte = sock->Send(buf, datalen);
+                        printf("ClientChat Send %d bytes\n", sendByte);
+
+                        sdlink.commit(sendByte);
+
+                        if(sendByte < datalen){
+                            printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                        }
+
                         break;
+                    }
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
@@ -196,27 +200,20 @@ void serverChat(const char *addr)
 
                         }
                         if (sockEvent & WRITE_EVENT){
-                            // if(!pendServQ.empty()) {
-                            //     char* sendBuf = pendServQ.front();
-                            //     int datalen = (int)strlen(sendBuf);
-                            //     sendByte = sock->Send(sendBuf, datalen);
-                            //     printf("ClientChat pendServQ Send %d bytes\n", sendByte);
+                            datalen = sdlink.getSize();
+                            char* buf = (char*)malloc(datalen);
+                            sdlink.get(datalen, buf);
+                            sendByte = sock->Send(buf, datalen);
+                            printf("ClientChat Send %d bytes\n", sendByte);
 
-                            //     if(sendByte < datalen){
-                            //         int size = datalen-sendByte;
-                            //         char* buf = (char*) malloc((size));
-                            //         for (int i = 0; i<size; i++){
-                            //             *(buf+i) = *(msg.cmd_msg.data + sendByte + i); 
-                            //         }
-                            //         pendServQ.push_back(buf);
-                            //         printf("ClientChat pendServQ push_back %d bytes\n", (datalen-sendByte));
-                            //         // sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                            //         free(sendBuf);
-                            //     }
-                            // }
-                            // else{
-                            //     // sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-                            // }
+                            sdlink.commit(sendByte);
+
+                            if(sendByte < datalen){
+                                printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                                sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                            } else{
+                                sock->setEvent(READ_EVENT | EXCEPT_EVENT);
+                            }
 
                         }
                         if (sockEvent & EXCEPT_EVENT){
@@ -230,7 +227,6 @@ void serverChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                         printf("ClientChat user event in CLOSING, Error \n");
-                        free(msg.cmd_msg.data);
                         break;
                     case NETWORK_EVENT:
                         printf("ClientChat Nework event in CLOSING, Error \n");    

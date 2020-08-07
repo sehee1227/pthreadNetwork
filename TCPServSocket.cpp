@@ -6,7 +6,6 @@
 #include <errno.h>
 #include <string.h>
 
-#include "socketservice.h"
 #include "TCPServSocket.h"
 
 TCPServSocket::TCPServSocket()

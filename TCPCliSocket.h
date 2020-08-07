@@ -8,8 +8,6 @@
 
 class TCPCliSocket : public Socket
 {
-	// int socketFD;
-	SocketService* sockService;
 public:
 	TCPCliSocket();
 	~TCPCliSocket();
@@ -18,5 +16,9 @@ public:
 	void Close();
 	int Send(char*, int);
 	int Recv(char*, int);
+	void setEvent(int event)
+	{
+		sockService->updateEvent(socketFD, event);
+	}
 
 };

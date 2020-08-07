@@ -9,6 +9,7 @@
 #include "msgQueue.h"
 #include "socketservice.h"
 #include "TCPCliSocket.h"
+#include "datalink.h"
 
 #define PORT 9000
 #define RECBUF_SIZE 2048 
@@ -82,6 +83,7 @@ void clientChat(const char *addr)
     chatMsg msg;
 
     std::list<char*> pendQ;
+    DataLink cdlink;
     
     if(pthread_create(&thr, NULL, userCliThread, NULL) != 0){
         printf("Fail to pthread_create\n");
@@ -113,6 +115,10 @@ void clientChat(const char *addr)
                         printf("ClientChat socket Close() by User action\n");
                     }
                 }
+                cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+
+                free(msg.cmd_msg.data);
+
                 printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
@@ -129,7 +135,6 @@ void clientChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                         printf("ClientChat user event in CLOSED, Error \n");
-                        free(msg.cmd_msg.data);
                         break;
                     case NETWORK_EVENT:
                         printf("ClientChat Nework event in CLOSED, Error \n");    
@@ -139,23 +144,23 @@ void clientChat(const char *addr)
                 printf("State : ESTABLISHED\n");  
                 switch(msg.cmd){
                     case USER_EVENT:
-                        datalen = (int)strlen(msg.cmd_msg.data);
-                        sendByte = sock->Send(msg.cmd_msg.data, datalen);
+                    {
+                        datalen = cdlink.getSize();
+                        char* buf = (char*)malloc(datalen);
+                        cdlink.get(datalen, buf);
+                        sendByte = sock->Send(buf, datalen);
                         printf("ClientChat Send %d bytes\n", sendByte);
 
-                        // if(sendByte < datalen){
-                        //     int size = datalen-sendByte;
-                        //     char* buf = (char*) malloc((size));
-                        //     for (int i = 0; i<size; i++){
-                        //         *(buf+i) = *(msg.cmd_msg.data + sendByte + i); 
-                        //     }
-                        //     pendQ.push_back(buf);
-                        //     printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                        //     sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                        // }
+                        cdlink.commit(sendByte);
+
+                        if(sendByte < datalen){
+                            printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                        }
 
                         free(msg.cmd_msg.data);
                         break;
+                    }
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
@@ -173,27 +178,20 @@ void clientChat(const char *addr)
 
                         }
                         if (sockEvent & WRITE_EVENT){
-                            // if(!pendQ.empty()) {
-                            //     char* sendBuf = pendQ.front();
-                            //     int datalen = strlen(sendBuf);
-                            //     sendByte = sock->Send(sendBuf, datalen);
-                            //     printf("ClientChat pendQ Send %d bytes\n", sendByte);
+                            datalen = cdlink.getSize();
+                            char* buf = (char*)malloc(datalen);
+                            cdlink.get(datalen, buf);
+                            sendByte = sock->Send(buf, datalen);
+                            printf("ClientChat Send %d bytes\n", sendByte);
 
-                            //     if(sendByte < datalen){
-                            //         int size = datalen-sendByte;
-                            //         char* buf = (char*) malloc((size));
-                            //         for (int i = 0; i<size; i++){
-                            //             *(buf+i) = *(msg.cmd_msg.data + sendByte + i); 
-                            //         }
-                            //         pendQ.push_back(buf);
-                            //         printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            //         sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                            //         free(sendBuf);
-                            //     }
-                            // }
-                            // else{
-                            //     sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-                            // }
+                            cdlink.commit(sendByte);
+
+                            if(sendByte < datalen){
+                                printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                                sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                            } else{
+                                sock->setEvent(READ_EVENT | EXCEPT_EVENT);
+                            }
                         }
                         if (sockEvent & EXCEPT_EVENT){
                             sock->Close();

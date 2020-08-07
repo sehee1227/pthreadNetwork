@@ -1,7 +1,9 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-// #include "socketservice.h"
+#include "socketservice.h"
+
+class SocketService;
 
 enum socketState {
 		CLOSED,
@@ -25,7 +27,7 @@ class Socket
 protected:
 		int socketFD;
 		int eventState;
-		// SocketService* sockService;
+		SocketService* sockService;
 public:
 	Socket()
 	{
@@ -50,12 +52,8 @@ public:
 	{
 		callback = cbFunc;
 		return;
-	}
+	}	
 
-	// void setEvent(int event)
-	// {
-	// 	sockService->updateEvent(socketFD, event);
-	// }
 };
 
 #endif 
