@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <ctype.h>
 
 #include "msgQueue.h"
 #include "socketservice.h"
@@ -14,6 +14,7 @@
 #define RECBUF_SIZE 2048 
 
 char recCliBuf[RECBUF_SIZE+1];
+const char* CEXIT = "EXIT\n";
 
 struct chatMsg
 {
@@ -101,6 +102,17 @@ void clientChat(const char *addr)
             sockState = sock->getState();
 
             if (msg.cmd == USER_EVENT){
+                char buf[5];
+                size_t len = strlen(CEXIT);
+                if (strlen(msg.cmd_msg.data) == len){
+                    for(int i=0; i<(int)len; i++){
+                        buf[i] = toupper(*(msg.cmd_msg.data+i));
+                    }
+                    if (strcmp(buf, CEXIT) == 0){
+                        sock->Close();
+                        printf("ClientChat socket Close() by User action\n");
+                    }
+                }
                 printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
@@ -148,11 +160,19 @@ void clientChat(const char *addr)
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
                             recvCnt = sock->Recv(recCliBuf, RECBUF_SIZE);
+
+                            if (recvCnt == 0){
+                                sock->Close();
+                                printf("ClientChat socket Close() by remote\n");
+                                break;
+                            }
+
                             recCliBuf[recvCnt] = '\0';
                             printf("ClientChat recvCnt: %d\n", recvCnt);
                             printf("-->%s", recCliBuf);
 
-                        }else if (sockEvent & WRITE_EVENT){
+                        }
+                        if (sockEvent & WRITE_EVENT){
                             // if(!pendQ.empty()) {
                             //     char* sendBuf = pendQ.front();
                             //     int datalen = strlen(sendBuf);
@@ -174,12 +194,11 @@ void clientChat(const char *addr)
                             // else{
                             //     sock->setEvent(READ_EVENT | EXCEPT_EVENT);
                             // }
-                        }else if (sockEvent & EXCEPT_EVENT){
+                        }
+                        if (sockEvent & EXCEPT_EVENT){
                             sock->Close();
                             printf("ClientChat socket Close()\n");
 
-                        } else {
-                            printf("ClientChat ESTABLISHED state wrong event\n");
                         }
                         break;
                 }
@@ -196,14 +215,14 @@ void clientChat(const char *addr)
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
                             printf("ClientChat socket Connect\n");
-                        }else if (sockEvent & WRITE_EVENT){
+                        }
+                        if (sockEvent & WRITE_EVENT){
                             sock->Connect();
                             printf("ClientChat socket Connect()\n");
-                        }else if (sockEvent & EXCEPT_EVENT){
+                        }
+                        if (sockEvent & EXCEPT_EVENT){
                             sock->Close();
                             printf("ClientChat socket Close()\n");
-                        } else {
-                            printf("ClientChat CONNECT state wrong event\n");
                         }
                         break;
                 }

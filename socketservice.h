@@ -25,6 +25,8 @@ class SocketService
 	int mctrlPipe[2];
 	int	mcntlEvent;
 	int maxFd;
+	int threadRef;
+	bool stopThread;
 
 	CondMgr sockCond;
 
@@ -46,7 +48,7 @@ public:
 	void updateEvent(int, int);
 	void sendNotify(Socket*, int);
 	static void* threadImp(void*);
-	//void run_imp(SocketService*);
+	void terminateThread(void);
 	void* run(void);
 };
 #endif

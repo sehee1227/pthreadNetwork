@@ -18,6 +18,9 @@ void *SocketService::threadImp(void* param)
 
 SocketService::SocketService()
 {
+	threadRef = 0;
+	stopThread = false;
+
 	FD_ZERO(&stReadFS);
 	FD_ZERO(&stWriteFS);
 	FD_ZERO(&stExceptFS);
@@ -55,6 +58,7 @@ SocketService* SocketService::getInstance()
 	if(sockService == NULL){
 		sockService = new SocketService();
 	}
+
 	return sockService;
 }
 SocketService::~SocketService(){}
@@ -74,7 +78,7 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 			maxFd = handle;
 			return false;
 	}
-	
+	threadRef++;
 	return true;
 
 }
@@ -91,8 +95,26 @@ void SocketService::detachHandle(int handle)
 		}
 	}
 	printf("detach handle\n");
+	threadRef--;
+	if (threadRef == 0){
+		terminateThread();
+	}
 }
 
+void SocketService::terminateThread()
+{
+	stopThread = true;
+
+	int res;
+	char ch[4] = "AA" ;
+	res = write(mctrlPipe[1], &ch, 2);
+	if (res <0){
+		printf("Pipe write fail on mctrlPipe[1]:%d\n",res);
+		fprintf(stderr, "recv error: %s\n", strerror(errno));
+	}
+
+
+}
 void SocketService::updateEvent(int handle, int event)
 {
 	char ch[4] = "AA" ;
@@ -145,6 +167,10 @@ void* SocketService::run(void)
 	sockCond.wait();
 
 	for(;;){
+		if(stopThread){
+			printf("terminate Thread\n");
+			break;
+		}
 		memcpy(&stReadFSTmp,&stReadFS, sizeof(stReadFS));
 		memcpy(&stWriteFSTmp,&stWriteFS, sizeof(stWriteFS));
 		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));

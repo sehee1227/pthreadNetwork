@@ -54,10 +54,6 @@ bool TCPServSocket::Open(const char* addr, int port)
 		return false;
 	}
 
-	// int flag = fcntl(socketFD, F_GETFL, 0);
-	// fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-	setState(ESTABLISHED);
-
 	setState(LISTEN);
 
 	sockService->attachHandle(socketFD, this);

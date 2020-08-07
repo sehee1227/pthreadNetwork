@@ -4,7 +4,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <ctype.h>
 
 #include "msgQueue.h"
 #include "socketservice.h"
@@ -14,6 +14,8 @@
 #define RECBUF_SIZE 2048 
 
 char recBuf[RECBUF_SIZE+1];
+const char* EXIT = "EXIT\n";
+
 
 struct chatMsg
 {
@@ -101,13 +103,26 @@ void serverChat(const char *addr)
             sockState = sock->getState();
 
             if (msg.cmd == USER_EVENT){
+                char buf[5];
+                size_t len = strlen(EXIT);
+                if (strlen(msg.cmd_msg.data) == len){
+                    for(int i=0; i<(int)len; i++){
+                        buf[i] = toupper(*(msg.cmd_msg.data+i));
+                    }
+                    if (strcmp(buf, EXIT) == 0){
+                        printf("ClientChat socket Close() by User action\n");
+                        sock->Close();
+                    }
+                }
                 printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
                     printf("NETWORK_EVENT: READ\n");
-                } else if (msg.cmd_msg.netEvent == WRITE_EVENT){
+                }
+                if (msg.cmd_msg.netEvent == WRITE_EVENT){
                     printf("NETWORK_EVENT: WRITE\n");
-                } else if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
+                }
+                if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
                     printf("NETWORK_EVENT: EXCEPT\n");
                 }
             }
@@ -133,17 +148,17 @@ void serverChat(const char *addr)
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
-                            sock->Accept();
                             printf("serverChat LISTEN Accept()\n");
-                        }else if (sockEvent & WRITE_EVENT){
+                            sock->Accept();
+                        }
+                        if (sockEvent & WRITE_EVENT){
                             printf("LISTEN state WRITE wrong event\n");
 
-                        }else if (sockEvent & EXCEPT_EVENT){
-                            sock->Close();
-                            printf("serverChat LISTEN Close()\n");
-                        } else {
-                            printf("serverChat LISTEN state wrong event\n");
                         }
+                        if (sockEvent & EXCEPT_EVENT){
+                            printf("serverChat LISTEN Close()\n");
+                            sock->Close();
+                        } 
                         break;
                 }
             } else if (sockState == ESTABLISHED){
@@ -169,11 +184,18 @@ void serverChat(const char *addr)
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
                             recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
+
+                            if (recvCnt == 0){
+                                printf("ClientChat socket Close() by remote\n");
+                                sock->Close();
+                                break;
+                            }
                             recBuf[recvCnt] = '\0';
                             printf("serverChat recvCnt: %d\n", recvCnt);
                             printf("-->%s\n", recBuf);
 
-                        }else if (sockEvent & WRITE_EVENT){
+                        }
+                        if (sockEvent & WRITE_EVENT){
                             // if(!pendServQ.empty()) {
                             //     char* sendBuf = pendServQ.front();
                             //     int datalen = (int)strlen(sendBuf);
@@ -196,12 +218,11 @@ void serverChat(const char *addr)
                             //     // sock->setEvent(READ_EVENT | EXCEPT_EVENT);
                             // }
 
-                        }else if (sockEvent & EXCEPT_EVENT){
-                            sock->Close();
-                            printf("serverChat ESTABLISHED Close()\n");
-                        } else {
-                            printf("ESTABLISHED state wrong event\n");
                         }
+                        if (sockEvent & EXCEPT_EVENT){
+                            printf("serverChat ESTABLISHED Close()\n");
+                            sock->Close();
+                        } 
                         break;
                 }
            } else if(sockState == CLOSING){
