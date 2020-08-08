@@ -155,9 +155,9 @@ void clientChat(const char *addr)
 
                         datalen = strlen(msg.cmd_msg.data);
 
-                        printf("ClientChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
+                        // printf("ClientChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
                         sendByte = sock->Send(     msg.cmd_msg.data, datalen);
-                        printf("ClientChat Send %d bytes\n", sendByte);
+                        // printf("ClientChat Send %d bytes\n", sendByte);
                           free(msg.cmd_msg.data);
 
 
@@ -182,8 +182,8 @@ void clientChat(const char *addr)
                             else if(recvCnt >0){
 
                                 recCliBuf[recvCnt] = '\0';
-                                printf("ClientChat recvCnt: %d\n", recvCnt);
-                                printf("-->%s", recCliBuf);
+                                // printf("ClientChat recvCnt: %d\n", recvCnt);
+                                // printf("-->%s", recCliBuf);
                             }
 
                         } 
@@ -204,7 +204,7 @@ void clientChat(const char *addr)
                             // }
                             printf("serverChat ESTABLISEHD WRITE EVENT \n");
 
-                            sock->setEvent(READ_EVENT | EXCEPT_EVENT);
+                            // sock->setEvent(READ_EVENT | EXCEPT_EVENT);
                         }
                         if (sockEvent & EXCEPT_EVENT){
                             printf("ClientChat socket Close()\n");

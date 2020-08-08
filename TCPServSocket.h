@@ -11,7 +11,7 @@ class TCPServSocket : public Socket
 	// int socketFD;
 	int cliFD;
 	sockaddr_in cli;
-	int cliLen = sizeof(sockaddr_in);
+	int cliLen ;
 
 	// SocketService* sockService;
 

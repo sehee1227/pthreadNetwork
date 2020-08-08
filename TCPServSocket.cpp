@@ -50,7 +50,7 @@ bool TCPServSocket::Open(const char* addr, int port)
 	// int flag = fcntl(socketFD, F_GETFL, 0);
 	// fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
-	if (listen(socketFD, 5) <0){
+	if (listen(socketFD, 10) <0){
 		printf("Fail to listen socketFD: %d\n", socketFD);
 	    fprintf(stderr, "listen error: %s\n", strerror(errno));
 		return false;
@@ -62,26 +62,6 @@ bool TCPServSocket::Open(const char* addr, int port)
 	// sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
 
 	printf("TCPServSocket Open\n");
-		cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen);
-	if(cliFD < 0){
-		printf("Fail to accept: %d\n", socketFD);
-		fprintf(stderr, "accept error: %s\n", strerror(errno));
-		return false;
-	}
-
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-
-	setState(ESTABLISHED);
-	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
-	return true;
-	
-	return true;
-}
-
-bool TCPServSocket::Accept()
-{
 	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen);
 	if(cliFD < 0){
 		printf("Fail to accept: %d\n", socketFD);
@@ -94,14 +74,35 @@ bool TCPServSocket::Accept()
 
 	setState(ESTABLISHED);
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
+	sockService->updateEvent(socketFD, (READ_EVENT ));
+	
+	return true;
+}
+
+bool TCPServSocket::Accept()
+{
+	cliLen = sizeof(cli);
+	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen);
+	if(cliFD < 0){
+		printf("Fail to accept: %d\n", socketFD);
+		fprintf(stderr, "accept error: %s\n", strerror(errno));
+		return false;
+	}
+
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+
+	setState(ESTABLISHED);
+	// sockService->attachHandle(socketFD, this);
+	sockService->updateEvent(socketFD, (READ_EVENT ));
 	return true;
 
 }
 
 int TCPServSocket::Send(char* pBuf, int len)
 {
-	int nsentByte = send(cliFD, (void*)pBuf, len+1, MSG_DONTWAIT);
+	// int nsentByte = send(cliFD, (void*)pBuf, len+1, MSG_DONTWAIT);
+	int nsentByte = send(cliFD, (void*)pBuf, len+1, 0);
 	if (nsentByte < 0){
 	   fprintf(stderr, "send error: %s\n", strerror(errno));
 	}
@@ -112,6 +113,7 @@ int TCPServSocket::Send(char* pBuf, int len)
 int TCPServSocket::Recv(char* pBuf, int len)
 {
 	int nrecvByte = recv(cliFD, (void*)pBuf, len, MSG_DONTWAIT);
+	// int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
 	if (nrecvByte < 0){
 	   fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}

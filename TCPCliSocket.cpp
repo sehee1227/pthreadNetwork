@@ -50,7 +50,7 @@ bool TCPCliSocket::Open(const char* addr, int port)
 	setState(ESTABLISHED);
 	
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, READ_EVENT | EXCEPT_EVENT);
+	sockService->updateEvent(socketFD, READ_EVENT);
 
 	printf("TCPClivSocket ESTABLISHED\n");
 	
@@ -68,7 +68,7 @@ bool TCPCliSocket::Connect()
 	if( getsockopt(socketFD, SOL_SOCKET, SO_ERROR, (void*)&error, &len) < 0){
 		printf("Fail to connect wait socketFD: %d\n", socketFD);
 	    fprintf(stderr, "connect wait error: %s\n", strerror(errno));
-	    	sockService->updateEvent(socketFD, EXCEPT_EVENT);
+	    	// sockService->updateEvent(socketFD, EXCEPT_EVENT);
 		return false;
 	}
 
@@ -78,7 +78,7 @@ bool TCPCliSocket::Connect()
 	setState(ESTABLISHED);
 	
 	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
+	sockService->updateEvent(socketFD, (READ_EVENT));
 
 	printf("TCPClivSocket ESTABLISHED\n");
 	
@@ -87,9 +87,10 @@ bool TCPCliSocket::Connect()
 
 int TCPCliSocket::Send(char* pBuf, int len)
 {
-	int nsentByte = send(socketFD, (void*)pBuf, len+1, MSG_DONTWAIT);
+	// int nsentByte = send(socketFD, (void*)pBuf, len+1, MSG_DONTWAIT);
+	int nsentByte = send(socketFD, (void*)pBuf, len+1, 0);
 	if (nsentByte < 0){
-		fprintf(stderr, "send error: %s\n", strerror(errno));
+		// fprintf(stderr, "send error: %s\n", strerror(errno));
 	}
 	return nsentByte;
 
@@ -97,9 +98,10 @@ int TCPCliSocket::Send(char* pBuf, int len)
 
 int TCPCliSocket::Recv(char* pBuf, int len)
 {
-	int nrecvByte= recv(socketFD, (void*)pBuf, len, MSG_DONTWAIT);
+	// int nrecvByte= recv(socketFD, (void*)pBuf, len, MSG_DONTWAIT);
+	int nrecvByte= recv(socketFD, (void*)pBuf, len, 0);
        if (nrecvByte < 0){
-	       fprintf(stderr, "recv error: %s\n", strerror(errno));
+	    //    fprintf(stderr, "recv error: %s\n", strerror(errno));
        }
 	return nrecvByte;
 

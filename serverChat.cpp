@@ -179,14 +179,14 @@ void serverChat(const char *addr)
 
                         datalen = strlen(msg.cmd_msg.data);
 
-                        printf("ClientChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
+                        printf("serverChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
                         sendByte = sock->Send(     msg.cmd_msg.data, datalen);
-                        printf("ClientChat Send %d bytes\n", sendByte);
+                        printf("serverChat Send %d bytes\n", sendByte);
                           free(msg.cmd_msg.data);
 
 
                         if(sendByte < datalen){
-                            printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
                             sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                         }
 
