@@ -86,7 +86,7 @@ bool TCPServSocket::Accept()
 
 int TCPServSocket::Send(char* pBuf, int len)
 {
-	int nsentByte = send(cliFD, (void*)pBuf, len+1, 0);
+	int nsentByte = send(cliFD, (void*)pBuf, len+1, MSG_DONTWAIT);
 
 	return nsentByte;
 
@@ -94,7 +94,7 @@ int TCPServSocket::Send(char* pBuf, int len)
 
 int TCPServSocket::Recv(char* pBuf, int len)
 {
-	int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
+	int nrecvByte = recv(cliFD, (void*)pBuf, len, MSG_DONTWAIT);
 	if (nrecvByte < 0){
 	   fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}

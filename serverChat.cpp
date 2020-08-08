@@ -12,7 +12,7 @@
 #include "datalink.h"
 
 #define PORT 9000
-#define RECBUF_SIZE 2048 
+#define RECBUF_SIZE 1024 
 
 char recBuf[RECBUF_SIZE+1];
 const char* EXIT = "EXIT\n";
