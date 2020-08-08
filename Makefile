@@ -1,7 +1,7 @@
 CC = g++
 CFLAGS = -W -Wall
 TARGET = chatTest
-SRCS = clientChat.cpp cond.cpp main.cpp serverChat.cpp socketservice.cpp TCPCliSocket.cpp TCPServSocket.cpp
+SRCS = datalink.cpp clientChat.cpp cond.cpp main.cpp serverChat.cpp socketservice.cpp TCPCliSocket.cpp TCPServSocket.cpp
 OBJS := $(SRCS:%.cpp=%.o)
 LDFLAGS = -pthread
 
