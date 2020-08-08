@@ -46,6 +46,9 @@ bool TCPServSocket::Open(const char* addr, int port)
 	    fprintf(stderr, "bind error: %s\n", strerror(errno));
 		return false;
 	}
+	
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
 	if (listen(socketFD, 5) <0){
 		printf("Fail to listen socketFD: %d\n", socketFD);
