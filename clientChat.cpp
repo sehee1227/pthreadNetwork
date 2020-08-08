@@ -115,7 +115,7 @@ void clientChat(const char *addr)
                     }
                 }
                 // cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
-                printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                // printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
                 // free(msg.cmd_msg.data);
 
@@ -183,7 +183,7 @@ void clientChat(const char *addr)
 
                                 recCliBuf[recvCnt] = '\0';
                                 // printf("ClientChat recvCnt: %d\n", recvCnt);
-                                // printf("-->%s", recCliBuf);
+                                printf("-->%s", recCliBuf);
                             }
 
                         } 

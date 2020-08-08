@@ -124,25 +124,21 @@ void SocketService::updateEvent(int handle, int event)
 
 	if (event & READ_EVENT){
 		FD_SET(handle, &stReadFS);
-	printf("updata READ event:%x\n", event);
 	}
 
 	FD_CLR(handle, &stWriteFS);
 	if (event & WRITE_EVENT){
 		FD_SET(handle, &stWriteFS);
-	printf("updata WRITE event:%x\n", event);
 	}
 
 	FD_CLR(handle, &stExceptFS);
 	if (event & EXCEPT_EVENT){
 		FD_SET(handle, &stExceptFS);
-	printf("updata EXCEPT event:%x\n", event);
 	}
 
 	int res;
 	res = write(mctrlPipe[1], &ch, 2);
 	if (res <0){
-		printf("Pipe write fail on mctrlPipe[1]:%d\n",res);
 		fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}
 	sockCond.signal();
@@ -176,18 +172,18 @@ void* SocketService::run(void)
 		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));
 		
 		FD_SET(mctrlPipe[0], &stReadFSTmp);
+		printf("socketservice maxFd:%d\n", maxFd);
+
 		nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, 0);
 		if (nRes <0){
 			printf("Fail to select\n");
 	    	fprintf(stderr, "select  error: %s\n", strerror(errno));
-	    	// sockService->updateEvent(socketFD, EXCEPT_EVENT);
 			return NULL;
 		}
 		maxSignal = nRes;
 
 		if( FD_ISSET(mctrlPipe[0], &stReadFSTmp)){
 			char ch[4] = {0,};
-				printf("socketservice receive control signal \n");
 			read(mctrlPipe[0], ch, 2);
 			maxSignal--;
 			if (maxSignal <= 0){
@@ -201,7 +197,6 @@ void* SocketService::run(void)
 			SockInfo sockinfo = *itr;
 			nFD = sockinfo.sockFd;
 			if( FD_ISSET(nFD, &stReadFSTmp)){
-				printf("select read event handle:%d\n" nFD);
 				sendNotify(sockinfo.socket, READ_EVENT);
 				maxSignal--;
 			}

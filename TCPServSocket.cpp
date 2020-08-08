@@ -73,8 +73,8 @@ bool TCPServSocket::Open(const char* addr, int port)
 	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
 	setState(ESTABLISHED);
-	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT ));
+	sockService->attachHandle(cliFD, this);
+	sockService->updateEvent(cliFD, (READ_EVENT ));
 	
 	return true;
 }
@@ -101,8 +101,8 @@ bool TCPServSocket::Accept()
 
 int TCPServSocket::Send(char* pBuf, int len)
 {
-	// int nsentByte = send(cliFD, (void*)pBuf, len+1, MSG_DONTWAIT);
-	int nsentByte = send(cliFD, (void*)pBuf, len+1, 0);
+	int nsentByte = send(cliFD, (void*)pBuf, len+1, MSG_DONTWAIT);
+	// int nsentByte = send(cliFD, (void*)pBuf, len+1, 0);
 	if (nsentByte < 0){
 	   fprintf(stderr, "send error: %s\n", strerror(errno));
 	}
@@ -114,16 +114,16 @@ int TCPServSocket::Recv(char* pBuf, int len)
 {
 	int nrecvByte = recv(cliFD, (void*)pBuf, len, MSG_DONTWAIT);
 	// int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
-	if (nrecvByte < 0){
-	   fprintf(stderr, "recv error: %s\n", strerror(errno));
-	}
+	// if (nrecvByte < 0){
+	//    fprintf(stderr, "recv error: %s\n", strerror(errno));
+	// }
 	return nrecvByte;
 }
 
 void TCPServSocket::Close()
 {
-	sockService->updateEvent(socketFD, 0);
-	sockService->detachHandle(socketFD);
+	sockService->updateEvent(cliFD, 0);
+	sockService->detachHandle(cliFD);
 	close(cliFD);
 	close(socketFD);
 

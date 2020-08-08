@@ -68,7 +68,7 @@ void* userThread(void* data)
         strncpy(data, buf, len);
 
         msg.cmd = USER_EVENT;
-        printf("send USER EVENT: %d\n", len);
+        // printf("send USER EVENT: %d\n", len);
         msg.cmd_msg.data = data;
         msgServQue.putQ(msg);
     }
@@ -116,7 +116,7 @@ void serverChat(const char *addr)
                     }
                 }
                 // sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
-                printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                // printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
                 // free(msg.cmd_msg.data);
 
@@ -179,15 +179,15 @@ void serverChat(const char *addr)
 
                         datalen = strlen(msg.cmd_msg.data);
 
-                        printf("serverChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
+                        // printf("serverChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
                         sendByte = sock->Send(     msg.cmd_msg.data, datalen);
-                        printf("serverChat Send %d bytes\n", sendByte);
+                        // printf("serverChat Send %d bytes\n", sendByte);
                           free(msg.cmd_msg.data);
 
 
                         if(sendByte < datalen){
                             printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                            // sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                         }
 
                         break;
@@ -205,7 +205,7 @@ void serverChat(const char *addr)
                                 break;
                             }
                             recBuf[recvCnt] = '\0';
-                            printf("serverChat recvCnt: %d\n", recvCnt);
+                            // printf("serverChat recvCnt: %d\n", recvCnt);
                             printf("-->%s\n", recBuf);
 
                         }
