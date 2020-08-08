@@ -46,7 +46,7 @@ bool TCPServSocket::Open(const char* addr, int port)
 	    fprintf(stderr, "bind error: %s\n", strerror(errno));
 		return false;
 	}
-	
+
 	int flag = fcntl(socketFD, F_GETFL, 0);
 	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
@@ -75,8 +75,8 @@ bool TCPServSocket::Accept()
 		return false;
 	}
 
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+	// int flag = fcntl(socketFD, F_GETFL, 0);
+	// fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 	setState(ESTABLISHED);
 
 	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
@@ -86,7 +86,7 @@ bool TCPServSocket::Accept()
 
 int TCPServSocket::Send(char* pBuf, int len)
 {
-	int nsentByte = send(cliFD, (void*)pBuf, len, 0);
+	int nsentByte = send(cliFD, (void*)pBuf, len+1, 0);
 
 	return nsentByte;
 

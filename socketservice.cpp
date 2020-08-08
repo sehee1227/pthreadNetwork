@@ -182,8 +182,10 @@ void* SocketService::run(void)
 		if( FD_ISSET(mctrlPipe[0], &stReadFSTmp)){
 			char ch[4] = {0,};
 			read(mctrlPipe[0], ch, 2);
-			printf("RX CRTL msg(%s)\n", ch);
 			maxSignal--;
+			if (maxSignal <= 0){
+				continue;
+			}
 		}
 
 		std::list<SockInfo>::iterator itr;

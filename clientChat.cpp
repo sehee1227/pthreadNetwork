@@ -82,7 +82,6 @@ void clientChat(const char *addr)
 
     chatMsg msg;
 
-    std::list<char*> pendQ;
     DataLink cdlink;
     
     if(pthread_create(&thr, NULL, userCliThread, NULL) != 0){

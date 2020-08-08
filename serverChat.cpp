@@ -39,15 +39,15 @@ union cmd_msg{
     char* data;
 };
 
-msgQueue<chatMsg> msgQue;
+msgQueue<chatMsg> msgServQue;
 
 
 void sendEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
-    printf("sendEvent: %d\n", sockEvent);
-    msgQue.putQ(msg);
+    printf("send NETWORK EVENT: %d\n", sockEvent);
+    msgServQue.putQ(msg);
 }
 
 void* userThread(void* data)
@@ -68,8 +68,9 @@ void* userThread(void* data)
         strncpy(data, buf, len);
 
         msg.cmd = USER_EVENT;
+        printf("send USER EVENT: %d\n", len);
         msg.cmd_msg.data = data;
-        msgQue.putQ(msg);
+        msgServQue.putQ(msg);
     }
 }
 void serverChat(const char *addr)
@@ -84,8 +85,6 @@ void serverChat(const char *addr)
     chatMsg msg;
     DataLink sdlink;
 
-    std::list<char*> pendServQ;
-    
     if(pthread_create(&thr, NULL, userThread, NULL) != 0){
 		printf("Fail to pthread_create\n");
 	}
@@ -99,9 +98,9 @@ void serverChat(const char *addr)
     sock->setCallback(sendEvent);
 
     while(true){
-        msgQue.wait();
-        while(!msgQue.empty()){
-            msg = msgQue.qetQ();
+        msgServQue.wait();
+        while(!msgServQue.empty()){
+            msg = msgServQue.qetQ();
             sockState = sock->getState();
 
             if (msg.cmd == USER_EVENT){
@@ -188,6 +187,8 @@ void serverChat(const char *addr)
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
+                            printf("serverChat Recv\n");
+
                             recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
 
                             if (recvCnt == 0){
