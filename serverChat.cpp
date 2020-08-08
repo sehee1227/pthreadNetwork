@@ -112,7 +112,7 @@ void serverChat(const char *addr)
                         buf[i] = toupper(*(msg.cmd_msg.data+i));
                     }
                     if (strcmp(buf, EXIT) == 0){
-                        printf("ClientChat socket Close() by User action\n");
+                        printf("serverChat socket Close() by User action\n");
                         sock->Close();
                     }
                 }
@@ -120,6 +120,7 @@ void serverChat(const char *addr)
 
                 free(msg.cmd_msg.data);
                 printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
                     printf("NETWORK_EVENT: READ\n");
@@ -136,17 +137,17 @@ void serverChat(const char *addr)
                 printf("State : CLOSED\n");
                 switch(msg.cmd){
                     case USER_EVENT:
-                            printf("ClientChat user event in CLOSED, Error \n");
+                            printf("serverChat user event in CLOSED, Error \n");
                             break;
                     case NETWORK_EVENT:
-                            printf("ClientChat Nework event in CLOSED, Error \n");    
+                            printf("serverChat Nework event in CLOSED, Error \n");    
                             break;  
                 }            
             }else if (sockState == LISTEN){
                 printf("State : LISTEN\n");
                 switch(msg.cmd){
                     case USER_EVENT:
-                            printf("ClientChat user event in LISTEN, Error \n");
+                            printf("serverChat user event in LISTEN, Error \n");
                             break;
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
@@ -173,12 +174,12 @@ void serverChat(const char *addr)
                         char* buf = (char*)malloc(datalen);
                         sdlink.get(datalen, buf);
                         sendByte = sock->Send(buf, datalen);
-                        printf("ClientChat Send %d bytes\n", sendByte);
+                        printf("serverChat Send %d bytes\n", sendByte);
 
                         sdlink.commit(sendByte);
 
                         if(sendByte < datalen){
-                            printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
                             sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                         }
 
@@ -190,7 +191,7 @@ void serverChat(const char *addr)
                             recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
 
                             if (recvCnt == 0){
-                                printf("ClientChat socket Close() by remote\n");
+                                printf("serverChat socket Close() by remote\n");
                                 sock->Close();
                                 break;
                             }
@@ -204,12 +205,12 @@ void serverChat(const char *addr)
                             char* buf = (char*)malloc(datalen);
                             sdlink.get(datalen, buf);
                             sendByte = sock->Send(buf, datalen);
-                            printf("ClientChat Send %d bytes\n", sendByte);
+                            printf("serverChat Send %d bytes\n", sendByte);
 
                             sdlink.commit(sendByte);
 
                             if(sendByte < datalen){
-                                printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                                printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
                                 sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                             } else{
                                 sock->setEvent(READ_EVENT | EXCEPT_EVENT);
@@ -226,10 +227,10 @@ void serverChat(const char *addr)
                 printf("State : CLOSING\n");
                 switch(msg.cmd){
                     case USER_EVENT:
-                        printf("ClientChat user event in CLOSING, Error \n");
+                        printf("serverChat user event in CLOSING, Error \n");
                         break;
                     case NETWORK_EVENT:
-                        printf("ClientChat Nework event in CLOSING, Error \n");    
+                        printf("serverChat Nework event in CLOSING, Error \n");    
                         break;  
                 }
             }

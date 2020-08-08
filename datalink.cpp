@@ -36,6 +36,7 @@ int DataLink::get(int size, char*buf)
 void DataLink::commit(int size)
 {
     read = (read+size)%BUF_SIZE;
+    this->size -= size;
 }
 int DataLink::getSize()
 {

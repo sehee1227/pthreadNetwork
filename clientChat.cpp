@@ -119,7 +119,7 @@ void clientChat(const char *addr)
 
                 free(msg.cmd_msg.data);
 
-                printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                printf("USER_EVENT length:%d, %s\n", cdlink.getSize());
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
                     printf("NETWORK_EVENT: READ\n");
@@ -158,7 +158,6 @@ void clientChat(const char *addr)
                             sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                         }
 
-                        free(msg.cmd_msg.data);
                         break;
                     }
                     case NETWORK_EVENT:
@@ -167,16 +166,18 @@ void clientChat(const char *addr)
                             recvCnt = sock->Recv(recCliBuf, RECBUF_SIZE);
 
                             if (recvCnt == 0){
-                                sock->Close();
                                 printf("ClientChat socket Close() by remote\n");
+                                sock->Close();
                                 break;
                             }
+                            else if(recvCnt >0){
 
-                            recCliBuf[recvCnt] = '\0';
-                            printf("ClientChat recvCnt: %d\n", recvCnt);
-                            printf("-->%s", recCliBuf);
+                                recCliBuf[recvCnt] = '\0';
+                                printf("ClientChat recvCnt: %d\n", recvCnt);
+                                printf("-->%s", recCliBuf);
+                            }
 
-                        }
+                        } 
                         if (sockEvent & WRITE_EVENT){
                             datalen = cdlink.getSize();
                             char* buf = (char*)malloc(datalen);
@@ -194,8 +195,8 @@ void clientChat(const char *addr)
                             }
                         }
                         if (sockEvent & EXCEPT_EVENT){
-                            sock->Close();
                             printf("ClientChat socket Close()\n");
+                            sock->Close();
 
                         }
                         break;
@@ -207,7 +208,6 @@ void clientChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                         printf("ClientChat user event in CONNECT, Error \n");
-                        free(msg.cmd_msg.data);
                         break;
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
@@ -215,12 +215,12 @@ void clientChat(const char *addr)
                             printf("ClientChat socket Connect\n");
                         }
                         if (sockEvent & WRITE_EVENT){
-                            sock->Connect();
                             printf("ClientChat socket Connect()\n");
+                            sock->Connect();
                         }
                         if (sockEvent & EXCEPT_EVENT){
-                            sock->Close();
                             printf("ClientChat socket Close()\n");
+                            sock->Close();
                         }
                         break;
                 }
