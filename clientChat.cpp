@@ -114,10 +114,10 @@ void clientChat(const char *addr)
                         sock->Close();
                     }
                 }
-                cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
-                printf("USER_EVENT length:%d, %s\n", cdlink.getSize(), msg.cmd_msg.data);
+                // cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
-                free(msg.cmd_msg.data);
+                // free(msg.cmd_msg.data);
 
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
@@ -144,13 +144,23 @@ void clientChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                     {
-                        datalen = cdlink.getSize();
-                        char* buf = (char*)malloc(datalen);
-                        cdlink.get(datalen, buf);
-                        sendByte = sock->Send(buf, datalen);
-                        printf("ClientChat Send %d bytes\n", sendByte);
+                        // datalen = cdlink.getSize();
+                        // char* buf = (char*)malloc(datalen);
+                        // printf("ClientChat before Send %d bytes: %s\n", sendByte, buf);
+                        // cdlink.get(datalen, buf);
+                        // sendByte = sock->Send(buf, datalen);
+                        // printf("ClientChat Send %d bytes\n", sendByte);
 
-                        cdlink.commit(sendByte);
+                        // cdlink.commit(sendByte);
+
+                        datalen = strlen(msg.cmd_msg.data);
+
+                        printf("ClientChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
+                        sendByte = sock->Send(     msg.cmd_msg.data, datalen);
+                        printf("ClientChat Send %d bytes\n", sendByte);
+                          free(msg.cmd_msg.data);
+
+
 
                         if(sendByte < datalen){
                             printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
@@ -178,20 +188,23 @@ void clientChat(const char *addr)
 
                         } 
                         if (sockEvent & WRITE_EVENT){
-                            datalen = cdlink.getSize();
-                            char* buf = (char*)malloc(datalen);
-                            cdlink.get(datalen, buf);
-                            sendByte = sock->Send(buf, datalen);
-                            printf("ClientChat Send %d bytes\n", sendByte);
+                            // datalen = cdlink.getSize();
+                            // char* buf = (char*)malloc(datalen);
+                            // cdlink.get(datalen, buf);
+                            // sendByte = sock->Send(buf, datalen);
+                            // printf("ClientChat Send %d bytes\n", sendByte);
 
-                            cdlink.commit(sendByte);
+                            // cdlink.commit(sendByte);
 
-                            if(sendByte < datalen){
-                                printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                                sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                            } else{
-                                sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-                            }
+                            // if(sendByte < datalen){
+                            //     printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            //     sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                            // } else{
+                            //     sock->setEvent(READ_EVENT | EXCEPT_EVENT);
+                            // }
+                            printf("serverChat ESTABLISEHD WRITE EVENT \n");
+
+                            sock->setEvent(READ_EVENT | EXCEPT_EVENT);
                         }
                         if (sockEvent & EXCEPT_EVENT){
                             printf("ClientChat socket Close()\n");

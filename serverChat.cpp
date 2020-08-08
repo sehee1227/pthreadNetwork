@@ -115,10 +115,10 @@ void serverChat(const char *addr)
                         sock->Close();
                     }
                 }
-                sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                // sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
                 printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
-                free(msg.cmd_msg.data);
+                // free(msg.cmd_msg.data);
 
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
@@ -169,16 +169,24 @@ void serverChat(const char *addr)
                 switch(msg.cmd){
                     case USER_EVENT:
                     {
-                        datalen = sdlink.getSize();
-                        char* buf = (char*)malloc(datalen);
-                        sdlink.get(datalen, buf);
-                        sendByte = sock->Send(buf, datalen);
-                        printf("serverChat Send %d bytes\n", sendByte);
+                        // datalen = sdlink.getSize();
+                        // char* buf = (char*)malloc(datalen);
+                        // sdlink.get(datalen, buf);
+                        // sendByte = sock->Send(buf, datalen);
+                        // printf("serverChat Send %d bytes\n", sendByte);
 
-                        sdlink.commit(sendByte);
+                        // sdlink.commit(sendByte);
+
+                        datalen = strlen(msg.cmd_msg.data);
+
+                        printf("ClientChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
+                        sendByte = sock->Send(     msg.cmd_msg.data, datalen);
+                        printf("ClientChat Send %d bytes\n", sendByte);
+                          free(msg.cmd_msg.data);
+
 
                         if(sendByte < datalen){
-                            printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
                             sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
                         }
 
@@ -202,20 +210,23 @@ void serverChat(const char *addr)
 
                         }
                         if (sockEvent & WRITE_EVENT){
-                            datalen = sdlink.getSize();
-                            char* buf = (char*)malloc(datalen);
-                            sdlink.get(datalen, buf);
-                            sendByte = sock->Send(buf, datalen);
-                            printf("serverChat Send %d bytes\n", sendByte);
+                            // datalen = sdlink.getSize();
+                            // char* buf = (char*)malloc(datalen);
+                            // sdlink.get(datalen, buf);
+                            // sendByte = sock->Send(buf, datalen);
+                            // printf("serverChat Send %d bytes\n", sendByte);
 
-                            sdlink.commit(sendByte);
+                            // sdlink.commit(sendByte);
 
-                            if(sendByte < datalen){
-                                printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                                sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                            } else{
-                                sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-                            }
+                            // if(sendByte < datalen){
+                            //     printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                            //     sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                            // } else{
+                            //     sock->setEvent(READ_EVENT | EXCEPT_EVENT);
+                            // }
+
+                            printf("serverChat ESTABLISEHD WRITE EVENT \n");
+                            sock->setEvent(READ_EVENT | EXCEPT_EVENT);
 
                         }
                         if (sockEvent & EXCEPT_EVENT){
