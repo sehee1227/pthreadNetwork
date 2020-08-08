@@ -47,8 +47,8 @@ bool TCPServSocket::Open(const char* addr, int port)
 		return false;
 	}
 
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+	// int flag = fcntl(socketFD, F_GETFL, 0);
+	// fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
 	if (listen(socketFD, 5) <0){
 		printf("Fail to listen socketFD: %d\n", socketFD);
@@ -58,10 +58,24 @@ bool TCPServSocket::Open(const char* addr, int port)
 
 	setState(LISTEN);
 
-	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
+	// sockService->attachHandle(socketFD, this);
+	// sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
 
 	printf("TCPServSocket Open\n");
+		cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen);
+	if(cliFD < 0){
+		printf("Fail to accept: %d\n", socketFD);
+		fprintf(stderr, "accept error: %s\n", strerror(errno));
+		return false;
+	}
+
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+
+	setState(ESTABLISHED);
+	sockService->attachHandle(socketFD, this);
+	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
+	return true;
 	
 	return true;
 }
@@ -75,10 +89,11 @@ bool TCPServSocket::Accept()
 		return false;
 	}
 
-	// int flag = fcntl(socketFD, F_GETFL, 0);
-	// fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-	setState(ESTABLISHED);
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
+	setState(ESTABLISHED);
+	sockService->attachHandle(socketFD, this);
 	sockService->updateEvent(socketFD, (READ_EVENT | EXCEPT_EVENT));
 	return true;
 
@@ -87,7 +102,9 @@ bool TCPServSocket::Accept()
 int TCPServSocket::Send(char* pBuf, int len)
 {
 	int nsentByte = send(cliFD, (void*)pBuf, len+1, MSG_DONTWAIT);
-
+	if (nsentByte < 0){
+	   fprintf(stderr, "send error: %s\n", strerror(errno));
+	}
 	return nsentByte;
 
 }
