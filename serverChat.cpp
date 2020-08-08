@@ -40,6 +40,8 @@ union cmd_msg{
 };
 
 msgQueue<chatMsg> msgServQue;
+CondMgr servThrStart;
+
 
 
 void sendEvent(int  sockEvent){
@@ -56,6 +58,8 @@ void* userThread(void* data)
     char buf[128];
 
     printf("Start user thread\n");
+
+    servThrStart.wait();
     
     while(true){
         // scanf("%s", buf);
@@ -113,6 +117,7 @@ void serverChat(const char *addr)
                     if (strcmp(buf, EXIT) == 0){
                         printf("serverChat socket Close() by User action\n");
                         sock->Close();
+                        return;
                     }
                 }
                 // sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
@@ -154,6 +159,7 @@ void serverChat(const char *addr)
                         if (sockEvent & READ_EVENT){
                             printf("serverChat LISTEN Accept()\n");
                             sock->Accept();
+                            servThrStart.signal();
                         }
                         if (sockEvent & WRITE_EVENT){
                             printf("LISTEN state WRITE wrong event\n");
@@ -196,18 +202,20 @@ void serverChat(const char *addr)
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
-                            // printf("serverChat Recv\n");
 
                             recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
 
                             if (recvCnt == 0){
                                 printf("serverChat socket Close() by remote\n");
                                 sock->Close();
-                                break;
+                                // break;
+                                return;
                             }
-                            recBuf[recvCnt] = '\0';
-                            // printf("serverChat recvCnt: %d\n", recvCnt);
-                            printf("-->%s\n", recBuf);
+                            if (recvCnt > 0){
+                                recBuf[recvCnt] = '\0';
+                                // printf("serverChat recvCnt: %d\n", recvCnt);
+                                printf("-->%s", recBuf);
+                            }
 
                         }
                         if (sockEvent & WRITE_EVENT){
@@ -233,6 +241,8 @@ void serverChat(const char *addr)
                         if (sockEvent & EXCEPT_EVENT){
                             printf("serverChat ESTABLISHED Close()\n");
                             sock->Close();
+                            return;
+                            // break;
                         } 
                         break;
                 }
@@ -249,7 +259,6 @@ void serverChat(const char *addr)
             }
         }
     }
-
 }
 
 

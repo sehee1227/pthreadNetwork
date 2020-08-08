@@ -74,9 +74,8 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 	sockList.push_back(sInfo);
 
 	if (handle > maxFd){
-			printf("handle(%d) is bigger than maxFD(%d)\n", handle, maxFd);
+			// printf("handle(%d) is bigger than maxFD(%d)\n", handle, maxFd);
 			maxFd = handle;
-			return false;
 	}
 	threadRef++;
 	return true;
@@ -85,16 +84,17 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 
 void SocketService::detachHandle(int handle) 
 {
+
 	updateEvent(handle, 0);
 
 	std::list<SockInfo>::iterator itr;
+
 	for(itr = sockList.begin(); itr!= sockList.end(); itr++){
 		SockInfo sockinfo = *itr;
 		if(sockinfo.sockFd == handle){
-			sockList.erase(itr);
+			sockList.erase(itr++);
 		}
 	}
-	printf("detach handle\n");
 	threadRef--;
 	if (threadRef == 0){
 		terminateThread();
