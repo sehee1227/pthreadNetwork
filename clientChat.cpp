@@ -116,10 +116,10 @@ void clientChat(const char *addr)
                     }
                 }
                 cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                printf("USER_EVENT length:%d, %s\n", cdlink.getSize(), msg.cmd_msg.data);
 
                 free(msg.cmd_msg.data);
 
-                printf("USER_EVENT length:%d, %s\n", cdlink.getSize());
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
                     printf("NETWORK_EVENT: READ\n");

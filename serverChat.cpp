@@ -117,9 +117,9 @@ void serverChat(const char *addr)
                     }
                 }
                 sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
+                printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
                 free(msg.cmd_msg.data);
-                printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
             } else if(msg.cmd == NETWORK_EVENT){
                 if (msg.cmd_msg.netEvent == READ_EVENT){
