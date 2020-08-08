@@ -110,8 +110,8 @@ void clientChat(const char *addr)
                         buf[i] = toupper(*(msg.cmd_msg.data+i));
                     }
                     if (strcmp(buf, CEXIT) == 0){
-                        sock->Close();
                         printf("ClientChat socket Close() by User action\n");
+                        sock->Close();
                     }
                 }
                 cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
