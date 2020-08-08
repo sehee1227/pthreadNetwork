@@ -46,7 +46,7 @@ void sendEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
-    printf("send NETWORK EVENT: %d\n", sockEvent);
+    // printf("send NETWORK EVENT: %d\n", sockEvent);
     msgServQue.putQ(msg);
 }
 
@@ -120,16 +120,17 @@ void serverChat(const char *addr)
 
                 // free(msg.cmd_msg.data);
 
-            } else if(msg.cmd == NETWORK_EVENT){
-                if (msg.cmd_msg.netEvent == READ_EVENT){
-                    printf("NETWORK_EVENT: READ\n");
-                }
-                if (msg.cmd_msg.netEvent == WRITE_EVENT){
-                    printf("NETWORK_EVENT: WRITE\n");
-                }
-                if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
-                    printf("NETWORK_EVENT: EXCEPT\n");
-                }
+            } 
+            else if(msg.cmd == NETWORK_EVENT){
+                // if (msg.cmd_msg.netEvent == READ_EVENT){
+                //     printf("NETWORK_EVENT: READ\n");
+                // }
+                // if (msg.cmd_msg.netEvent == WRITE_EVENT){
+                //     printf("NETWORK_EVENT: WRITE\n");
+                // }
+                // if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
+                //     printf("NETWORK_EVENT: EXCEPT\n");
+                // }
             }
 
             if (sockState == CLOSED ){
@@ -165,7 +166,7 @@ void serverChat(const char *addr)
                         break;
                 }
             } else if (sockState == ESTABLISHED){
-                printf("State : ESTABLISHED\n");  
+                // printf("State : ESTABLISHED\n");  
                 switch(msg.cmd){
                     case USER_EVENT:
                     {
@@ -195,7 +196,7 @@ void serverChat(const char *addr)
                     case NETWORK_EVENT:
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
-                            printf("serverChat Recv\n");
+                            // printf("serverChat Recv\n");
 
                             recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
 

@@ -172,7 +172,6 @@ void* SocketService::run(void)
 		memcpy(&stExceptFSTmp,&stExceptFS, sizeof(stExceptFS));
 		
 		FD_SET(mctrlPipe[0], &stReadFSTmp);
-		printf("socketservice maxFd:%d\n", maxFd);
 
 		nRes = select(maxFd+1,&stReadFSTmp, &stWriteFSTmp, &stExceptFSTmp, 0);
 		if (nRes <0){

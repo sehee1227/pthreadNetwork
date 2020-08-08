@@ -88,7 +88,7 @@ bool TCPCliSocket::Connect()
 int TCPCliSocket::Send(char* pBuf, int len)
 {
 	// int nsentByte = send(socketFD, (void*)pBuf, len+1, MSG_DONTWAIT);
-	int nsentByte = send(socketFD, (void*)pBuf, len+1, 0);
+	int nsentByte = send(socketFD, (void*)pBuf, len, 0);
 	if (nsentByte < 0){
 		// fprintf(stderr, "send error: %s\n", strerror(errno));
 	}

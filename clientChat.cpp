@@ -45,7 +45,7 @@ void sendCliEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
-    printf("sendEvent: %d\n", sockEvent);
+    // printf("sendEvent: %d\n", sockEvent);
     msgCliQue.putQ(msg);
 }
 
@@ -120,13 +120,13 @@ void clientChat(const char *addr)
                 // free(msg.cmd_msg.data);
 
             } else if(msg.cmd == NETWORK_EVENT){
-                if (msg.cmd_msg.netEvent == READ_EVENT){
-                    printf("NETWORK_EVENT: READ\n");
-                } else if (msg.cmd_msg.netEvent == WRITE_EVENT){
-                    printf("NETWORK_EVENT: WRITE\n");
-                } else if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
-                    printf("NETWORK_EVENT: EXCEPT\n");
-                }
+                // if (msg.cmd_msg.netEvent == READ_EVENT){
+                //     printf("NETWORK_EVENT: READ\n");
+                // } else if (msg.cmd_msg.netEvent == WRITE_EVENT){
+                //     printf("NETWORK_EVENT: WRITE\n");
+                // } else if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
+                //     printf("NETWORK_EVENT: EXCEPT\n");
+                // }
             }
 
             if (sockState == CLOSED ){
@@ -140,7 +140,7 @@ void clientChat(const char *addr)
                         break;  
                 }            
             } else if (sockState == ESTABLISHED){
-                printf("State : ESTABLISHED\n");  
+                // printf("State : ESTABLISHED\n");  
                 switch(msg.cmd){
                     case USER_EVENT:
                     {
@@ -156,7 +156,7 @@ void clientChat(const char *addr)
                         datalen = strlen(msg.cmd_msg.data);
 
                         // printf("ClientChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
-                        sendByte = sock->Send(     msg.cmd_msg.data, datalen);
+                        sendByte = sock->Send(msg.cmd_msg.data, datalen);
                         // printf("ClientChat Send %d bytes\n", sendByte);
                           free(msg.cmd_msg.data);
 
