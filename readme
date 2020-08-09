@@ -1,0 +1,10 @@
+Simple chat test program using TCP socket.
+
+To finish chat, just type "exit"
+
+
+server PC command: ./chatTest server Targetaddress
+  : Targetaddress ex: 192.168.219 100
+
+Client PC command:./chatTest client Targetaddress
+  : Targetaddress ex: 192.168.219 100
