@@ -31,7 +31,6 @@ protected:
 public:
 	Socket()
 	{
-		// sockService = SocketService::getInstance();
 	}
 	void setState(int state)
 	{
@@ -52,8 +51,14 @@ public:
 	{
 		callback = cbFunc;
 		return;
-	}	
+	}
 
+	// void setEvent(int event)
+	// {
+	// sockService->updateEvent(socketFD, event);
+
+	// }
+// 
 };
 
 #endif 

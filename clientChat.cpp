@@ -8,7 +8,7 @@
 
 #include "msgQueue.h"
 #include "socketservice.h"
-#include "TCPCliSocket.h"
+#include "TCPSocket.h"
 #include "datalink.h"
 
 #define PORT 9000
@@ -88,7 +88,7 @@ void clientChat(const char *addr)
         printf("Fail to pthread_create\n");
     }
     
-    TCPCliSocket* sock = new TCPCliSocket();
+    TCPSocket* sock = new TCPSocket();
 
     if (sock->Open(addr, PORT) == false){
         printf("Fail to open\n");
@@ -112,6 +112,7 @@ void clientChat(const char *addr)
                     if (strcmp(buf, CEXIT) == 0){
                         printf("ClientChat socket Close() by User action\n");
                         sock->Close();
+                        return;
                     }
                 }
                 // cdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
@@ -177,7 +178,7 @@ void clientChat(const char *addr)
                             if (recvCnt == 0){
                                 printf("ClientChat socket Close() by remote\n");
                                 sock->Close();
-                                break;
+                                return;
                             }
                             else if(recvCnt >0){
 
@@ -209,6 +210,7 @@ void clientChat(const char *addr)
                         if (sockEvent & EXCEPT_EVENT){
                             printf("ClientChat socket Close()\n");
                             sock->Close();
+                            return;
 
                         }
                         break;
@@ -233,6 +235,7 @@ void clientChat(const char *addr)
                         if (sockEvent & EXCEPT_EVENT){
                             printf("ClientChat socket Close()\n");
                             sock->Close();
+                            return;
                         }
                         break;
                 }

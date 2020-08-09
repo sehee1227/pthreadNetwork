@@ -6,21 +6,30 @@
 #include <errno.h>
 #include <string.h>
 
-#include "TCPServSocket.h"
+#include "TCPSocket.h"
 
-TCPServSocket::TCPServSocket()
+TCPSocket::TCPSocket()
 {
    	sockService = SocketService::getInstance();
 }
 
-TCPServSocket::~TCPServSocket()
+TCPSocket::TCPSocket(int cliFd)
+{
+   	sockService = SocketService::getInstance();
+	socketFD = cliFd;
+	sockService->attachHandle(socketFD, this);
+	setState(ESTABLISHED);
+
+}
+
+TCPSocket::~TCPSocket()
 {
 	close(cliFD);
 	close(socketFD);
    	printf("~TCPServSocket\n");
 }	
 
-bool TCPServSocket::Open(const char* addr, int port)
+bool TCPSocket::Open(const char* addr, int port)
 {
 	struct sockaddr_in sin;
 
@@ -50,13 +59,22 @@ bool TCPServSocket::Open(const char* addr, int port)
 	int flag = fcntl(socketFD, F_GETFL, 0);
 	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
+
+		setState(LISTEN);
+
+	sockService->attachHandle(socketFD, this);
+	sockService->updateEvent(socketFD, (READ_EVENT ));
+
 	if (listen(socketFD, 10) <0){
 		printf("Fail to listen socketFD: %d\n", socketFD);
 	    fprintf(stderr, "listen error: %s\n", strerror(errno));
 		return false;
 	}
+	sockService->updateEvent(socketFD, (READ_EVENT ));
 
 	setState(LISTEN);
+
+	usleep(1000);
 
 	sockService->attachHandle(socketFD, this);
 	sockService->updateEvent(socketFD, (READ_EVENT ));
@@ -66,8 +84,38 @@ bool TCPServSocket::Open(const char* addr, int port)
 	return true;
 }
 
-bool TCPServSocket::Accept()
+bool TCPSocket::Connect()
 {
+	int error = 0;
+	socklen_t len = sizeof(error);
+
+    printf("TCPClivSocket CONNECT");
+
+	if( getsockopt(socketFD, SOL_SOCKET, SO_ERROR, (void*)&error, &len) < 0){
+		printf("Fail to connect wait socketFD: %d\n", socketFD);
+	    fprintf(stderr, "connect wait error: %s\n", strerror(errno));
+	    	// sockService->updateEvent(socketFD, EXCEPT_EVENT);
+		return false;
+	}
+
+	int flag = fcntl(socketFD, F_GETFL, 0);
+	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+
+	setState(ESTABLISHED);
+	
+	sockService->attachHandle(socketFD, this);
+	sockService->updateEvent(socketFD, (READ_EVENT));
+
+	printf("TCPClivSocket ESTABLISHED\n");
+	
+	return true;
+}
+
+int TCPSocket::Accept()
+{
+	int cliFD, cliLen;
+	sockaddr_in cli;
+
 	cliLen = sizeof(cli);
 	cliFD = accept(socketFD, (struct sockaddr*)&cli, (socklen_t*)&cliLen);
 	if(cliFD < 0){
@@ -76,26 +124,17 @@ bool TCPServSocket::Accept()
 		return false;
 	}
 
-
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-
 	setState(ESTABLISHED);
 
-	flag = fcntl(cliFD, F_GETFL, 0);
+	int flag = fcntl(cliFD, F_GETFL, 0);
 	fcntl(cliFD, F_SETFL, flag | O_NONBLOCK);
 
-	sockService->attachHandle(cliFD, this);
-	sockService->updateEvent(cliFD, (READ_EVENT ));
-
-	sockService->detachHandle(socketFD);
-
-	return true;
+	return cliFD;
 }
 
-int TCPServSocket::Send(char* pBuf, int len)
+int TCPSocket::Send(char* pBuf, int len)
 {
-	int nsentByte = send(cliFD, (void*)pBuf, len+1, 0);
+	int nsentByte = send(socketFD, (void*)pBuf, len+1, 0);
 	if (nsentByte < 0){
 	   fprintf(stderr, "send error: %s\n", strerror(errno));
 	}
@@ -103,20 +142,23 @@ int TCPServSocket::Send(char* pBuf, int len)
 
 }
 
-int TCPServSocket::Recv(char* pBuf, int len)
+int TCPSocket::Recv(char* pBuf, int len)
 {
-	int nrecvByte = recv(cliFD, (void*)pBuf, len, 0);
+	int nrecvByte = recv(socketFD, (void*)pBuf, len, 0);
 	if (nrecvByte < 0){
 	//    fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}
 	return nrecvByte;
 }
 
-void TCPServSocket::Close()
+void TCPSocket::Close()
 {
-	sockService->detachHandle(cliFD);
-	// sockService->detachHandle(socketFD);
-	close(cliFD);
+	sockService->detachHandle(socketFD);
 	close(socketFD);
 
+}
+
+void TCPSocket::setEvent(int event)
+{
+	sockService->updateEvent(socketFD, event);
 }

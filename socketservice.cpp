@@ -117,6 +117,8 @@ void SocketService::terminateThread()
 }
 void SocketService::updateEvent(int handle, int event)
 {
+
+	printf ("Update event Handle: %d, event: %d\n", handle, event);
 	char ch[4] = "AA" ;
 
 	FD_CLR(handle, &stReadFS);
@@ -161,10 +163,11 @@ void* SocketService::run(void)
 	
 	printf("start Socket Service thread\n");
 	sockCond.wait();
+	printf("start Socket Service thread1\n");
 
 	for(;;){
 		if(stopThread){
-			printf("terminate Thread\n");
+			printf("terminate SocketService Thread\n");
 			break;
 		}
 		memcpy(&stReadFSTmp,&stReadFS, sizeof(stReadFS));

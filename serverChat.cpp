@@ -8,15 +8,11 @@
 
 #include "msgQueue.h"
 #include "socketservice.h"
-#include "TCPServSocket.h"
+#include "TCPSocket.h"
 #include "datalink.h"
+#include "serverUserChat.h"
 
 #define PORT 9000
-#define RECBUF_SIZE 1024 
-
-char recBuf[RECBUF_SIZE+1];
-const char* EXIT = "EXIT\n";
-
 
 struct chatMsg
 {
@@ -40,46 +36,27 @@ union cmd_msg{
 };
 
 msgQueue<chatMsg> msgServQue;
-CondMgr servThrStart;
-
-
 
 void sendEvent(int  sockEvent){
     chatMsg msg;
     msg.cmd = NETWORK_EVENT;
     msg.cmd_msg.netEvent = sockEvent;
-    // printf("send NETWORK EVENT: %d\n", sockEvent);
+    printf("send NETWORK EVENT: %d\n", sockEvent);
     msgServQue.putQ(msg);
 }
 
 void* userThread(void* data)
 {
-    chatMsg msg;
-    char buf[128];
 
     printf("Start user thread\n");
 
-    servThrStart.wait();
-    
-    while(true){
-        // scanf("%s", buf);
+    return serverUserChat(data);
 
-        fgets(buf, sizeof(buf), stdin);
-        int len = strlen(buf);
-
-        char* data = (char *)malloc(len);
-        memset(data, 0x00, len);
-        strncpy(data, buf, len);
-
-        msg.cmd = USER_EVENT;
-        // printf("send USER EVENT: %d\n", len);
-        msg.cmd_msg.data = data;
-        msgServQue.putQ(msg);
-    }
 }
 void serverChat(const char *addr)
 {
     pthread_t thr;
+    int cliSock;
     int sockEvent;
     int sockState;
     int recvCnt;
@@ -89,11 +66,8 @@ void serverChat(const char *addr)
     chatMsg msg;
     DataLink sdlink;
 
-    if(pthread_create(&thr, NULL, userThread, NULL) != 0){
-		printf("Fail to pthread_create\n");
-	}
     
-    TCPServSocket* sock = new TCPServSocket();
+    TCPSocket* sock = new TCPSocket();
 
     if (sock->Open(addr, PORT) == false){
         printf("Fail to open\n");
@@ -108,18 +82,6 @@ void serverChat(const char *addr)
             sockState = sock->getState();
 
             if (msg.cmd == USER_EVENT){
-                char buf[5];
-                size_t len = strlen(EXIT);
-                if (strlen(msg.cmd_msg.data) == len){
-                    for(int i=0; i<(int)len; i++){
-                        buf[i] = toupper(*(msg.cmd_msg.data+i));
-                    }
-                    if (strcmp(buf, EXIT) == 0){
-                        printf("serverChat socket Close() by User action\n");
-                        sock->Close();
-                        return;
-                    }
-                }
                 // sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
                 // printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
 
@@ -127,15 +89,15 @@ void serverChat(const char *addr)
 
             } 
             else if(msg.cmd == NETWORK_EVENT){
-                // if (msg.cmd_msg.netEvent == READ_EVENT){
-                //     printf("NETWORK_EVENT: READ\n");
-                // }
-                // if (msg.cmd_msg.netEvent == WRITE_EVENT){
-                //     printf("NETWORK_EVENT: WRITE\n");
-                // }
-                // if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
-                //     printf("NETWORK_EVENT: EXCEPT\n");
-                // }
+                if (msg.cmd_msg.netEvent == READ_EVENT){
+                    printf("NETWORK_EVENT: READ\n");
+                }
+                if (msg.cmd_msg.netEvent == WRITE_EVENT){
+                    printf("NETWORK_EVENT: WRITE\n");
+                }
+                if (msg.cmd_msg.netEvent == EXCEPT_EVENT){
+                    printf("NETWORK_EVENT: EXCEPT\n");
+                }
             }
 
             if (sockState == CLOSED ){
@@ -158,94 +120,24 @@ void serverChat(const char *addr)
                         sockEvent = msg.cmd_msg.netEvent;
                         if (sockEvent & READ_EVENT){
                             printf("serverChat LISTEN Accept()\n");
-                            sock->Accept();
-                            servThrStart.signal();
+                            cliSock = sock->Accept();
+
+                            if(pthread_create(&thr, NULL, userThread, (void*) &cliSock) != 0){
+                                printf("Fail to pthread_create\n");
+                            }
+
+                            goto EXITLOOP;
+
+                            // servThrStart.signal();
                         }
                         if (sockEvent & WRITE_EVENT){
                             printf("LISTEN state WRITE wrong event\n");
 
                         }
-                        if (sockEvent & EXCEPT_EVENT){
-                            printf("serverChat LISTEN Close()\n");
-                            sock->Close();
-                        } 
+
                         break;
                 }
-            } else if (sockState == ESTABLISHED){
-                // printf("State : ESTABLISHED\n");  
-                switch(msg.cmd){
-                    case USER_EVENT:
-                    {
-                        // datalen = sdlink.getSize();
-                        // char* buf = (char*)malloc(datalen);
-                        // sdlink.get(datalen, buf);
-                        // sendByte = sock->Send(buf, datalen);
-                        // printf("serverChat Send %d bytes\n", sendByte);
 
-                        // sdlink.commit(sendByte);
-
-                        datalen = strlen(msg.cmd_msg.data);
-
-                        // printf("serverChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
-                        sendByte = sock->Send(     msg.cmd_msg.data, datalen);
-                        // printf("serverChat Send %d bytes\n", sendByte);
-                          free(msg.cmd_msg.data);
-
-
-                        if(sendByte < datalen){
-                            printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            // sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                        }
-
-                        break;
-                    }
-                    case NETWORK_EVENT:
-                        sockEvent = msg.cmd_msg.netEvent;
-                        if (sockEvent & READ_EVENT){
-
-                            recvCnt = sock->Recv(recBuf, RECBUF_SIZE);
-
-                            if (recvCnt == 0){
-                                printf("serverChat socket Close() by remote\n");
-                                sock->Close();
-                                // break;
-                                return;
-                            }
-                            if (recvCnt > 0){
-                                recBuf[recvCnt] = '\0';
-                                // printf("serverChat recvCnt: %d\n", recvCnt);
-                                printf("-->%s", recBuf);
-                            }
-
-                        }
-                        if (sockEvent & WRITE_EVENT){
-                            // datalen = sdlink.getSize();
-                            // char* buf = (char*)malloc(datalen);
-                            // sdlink.get(datalen, buf);
-                            // sendByte = sock->Send(buf, datalen);
-                            // printf("serverChat Send %d bytes\n", sendByte);
-
-                            // sdlink.commit(sendByte);
-
-                            // if(sendByte < datalen){
-                            //     printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            //     sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                            // } else{
-                            //     sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-                            // }
-
-                            printf("serverChat ESTABLISEHD WRITE EVENT \n");
-                            sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-
-                        }
-                        if (sockEvent & EXCEPT_EVENT){
-                            printf("serverChat ESTABLISHED Close()\n");
-                            sock->Close();
-                            return;
-                            // break;
-                        } 
-                        break;
-                }
            } else if(sockState == CLOSING){
                 printf("State : CLOSING\n");
                 switch(msg.cmd){
@@ -259,6 +151,11 @@ void serverChat(const char *addr)
             }
         }
     }
+    EXITLOOP:
+    pthread_join(thr, NULL);
+    printf("end sever chat main sock->Close()\n");
+    sock->Close();
+
 }
 
 
