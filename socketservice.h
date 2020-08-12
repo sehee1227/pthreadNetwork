@@ -52,5 +52,6 @@ public:
 	static void* threadImp(void*);
 	void terminateThread(void);
 	void* run(void);
+	bool isRunnung();
 };
 #endif

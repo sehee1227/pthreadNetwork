@@ -69,7 +69,7 @@ void serverChat(const char *addr)
     
     TCPSocket* sock = new TCPSocket();
 
-    if (sock->Open(addr, PORT) == false){
+    if (sock->Open(addr, PORT, SERVER) == false){
         printf("Fail to open\n");
         return;
     }
@@ -128,7 +128,6 @@ void serverChat(const char *addr)
 
                             goto EXITLOOP;
 
-                            // servThrStart.signal();
                         }
                         if (sockEvent & WRITE_EVENT){
                             printf("LISTEN state WRITE wrong event\n");
@@ -154,7 +153,9 @@ void serverChat(const char *addr)
     EXITLOOP:
     pthread_join(thr, NULL);
     printf("end sever chat main sock->Close()\n");
+
     sock->Close();
+    delete sock;
 
 }
 

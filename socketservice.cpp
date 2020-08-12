@@ -18,6 +18,8 @@ void *SocketService::threadImp(void* param)
 
 SocketService::SocketService()
 {
+	printf("SocketService()\n");
+	
 	threadRef = 0;
 	stopThread = false;
 
@@ -61,7 +63,10 @@ SocketService* SocketService::getInstance()
 
 	return sockService;
 }
-SocketService::~SocketService(){}
+SocketService::~SocketService()
+{
+	printf("~SocketService()\n");
+}
 
 bool SocketService::attachHandle(int handle, Socket* socket)
 {
@@ -78,6 +83,9 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 			maxFd = handle;
 	}
 	threadRef++;
+
+	printf("SocketService::attach Handle threadRef:%d\n", threadRef);
+
 	return true;
 
 }
@@ -95,7 +103,9 @@ void SocketService::detachHandle(int handle)
 			sockList.erase(itr++);
 		}
 	}
-	threadRef--;
+	--threadRef;
+
+	printf("SocketService::detach Handle threadRef:%d\n", threadRef);
 	if (threadRef == 0){
 		terminateThread();
 	}
@@ -151,6 +161,16 @@ void SocketService::sendNotify(Socket* pInstance, int event)
 {
 	pInstance->notify(event);
 }
+
+bool SocketService::isRunnung()
+{
+	if (threadRef != 0){
+		return true;
+	}
+
+	return false;
+}
+
 
 void* SocketService::run(void)
 {

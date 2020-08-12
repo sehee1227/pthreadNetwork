@@ -90,7 +90,7 @@ void clientChat(const char *addr)
     
     TCPSocket* sock = new TCPSocket();
 
-    if (sock->Open(addr, PORT) == false){
+    if (sock->Open(addr, PORT, CLIENT) == false){
         printf("Fail to open\n");
         return;
     }
@@ -178,7 +178,7 @@ void clientChat(const char *addr)
                             if (recvCnt == 0){
                                 printf("ClientChat socket Close() by remote\n");
                                 sock->Close();
-                                return;
+                                goto EXITLOOP;
                             }
                             else if(recvCnt >0){
 
@@ -210,7 +210,7 @@ void clientChat(const char *addr)
                         if (sockEvent & EXCEPT_EVENT){
                             printf("ClientChat socket Close()\n");
                             sock->Close();
-                            return;
+                            goto EXITLOOP;
 
                         }
                         break;
@@ -242,5 +242,9 @@ void clientChat(const char *addr)
             }
         }
     }
+
+    EXITLOOP:
+    delete sock;
+    return;
 }
 

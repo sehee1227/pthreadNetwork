@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
 
     if (strcmp(server, buf) == 0){
         printf("Server\n");
-        serverChat(argv[2]);
+        serverChat("SERVER");
     } else if (strcmp(client, buf) == 0){
         printf("Client\n");
         clientChat(argv[2]);

@@ -114,7 +114,7 @@ void* serverUserChat(void* data)
                     if (strcmp(buf, EXIT) == 0){
                         printf("serverChat socket Close() by User action\n");
                         sock->Close();
-                        return NULL;
+                        goto EXITLOOP;
                     }
                 }
                 // sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
@@ -171,7 +171,7 @@ void* serverUserChat(void* data)
                                 printf("serverChat socket Close() by remote\n");
                                 sock->Close();
                                 // break;
-                                return NULL;
+                                goto  EXITLOOP;
                             }
                             if (recvCnt > 0){
                                 recBuf[recvCnt] = '\0';
@@ -215,7 +215,9 @@ void* serverUserChat(void* data)
             }
         }
     }
+    EXITLOOP:
 
+    delete sock;
     return NULL;
 }
 

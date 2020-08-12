@@ -10,7 +10,7 @@
 
 TCPSocket::TCPSocket()
 {
-   	sockService = SocketService::getInstance();
+       printf("TCPSocket()\n");
 }
 
 TCPSocket::TCPSocket(int cliFd)
@@ -19,17 +19,15 @@ TCPSocket::TCPSocket(int cliFd)
 	socketFD = cliFd;
 	sockService->attachHandle(socketFD, this);
 	setState(ESTABLISHED);
-
 }
 
 TCPSocket::~TCPSocket()
 {
-	close(cliFD);
-	close(socketFD);
-   	printf("~TCPServSocket\n");
+   	printf("~TCPSocket :%d \n", socketFD);
+    // delete sockService;
 }	
 
-bool TCPSocket::Open(const char* addr, int port)
+bool TCPSocket::Open(const char* addr, int port, int type)
 {
 	struct sockaddr_in sin;
 
@@ -39,49 +37,69 @@ bool TCPSocket::Open(const char* addr, int port)
 
     sin.sin_family = AF_INET;
     sin.sin_port = htons(port);
-    //sin.sin_addr.s_addr = inet_addr(addr);
-    sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	
+    
+    if (type == SERVER){
+        sin.sin_addr.s_addr = htonl(INADDR_ANY);
+    } else {
+        sin.sin_addr.s_addr = inet_addr(addr);
+    }
+
 	socketFD = socket(AF_INET, SOCK_STREAM, 0);
 
-	int nSockOpt = 1;
-	if (setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &nSockOpt, sizeof(nSockOpt)) < 0) {
-		printf("Fail to setsockopt socketFD: %d\n", socketFD);
-	    fprintf(stderr, "setsockopt error: %s\n", strerror(errno));
-		return false;
-	}
-	if(bind(socketFD, (struct sockaddr*)&sin, sizeof(sin)) < 0){
-		printf("Fail to bind socketFD: %d\n", socketFD);
-	    fprintf(stderr, "bind error: %s\n", strerror(errno));
-		return false;
-	}
+    if (type == SERVER){
 
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+        int nSockOpt = 1;
+        if (setsockopt(socketFD, SOL_SOCKET, SO_REUSEADDR, &nSockOpt, sizeof(nSockOpt)) < 0) {
+            printf("Fail to setsockopt socketFD: %d\n", socketFD);
+            fprintf(stderr, "setsockopt error: %s\n", strerror(errno));
+            return false;
+        }
+        if(bind(socketFD, (struct sockaddr*)&sin, sizeof(sin)) < 0){
+            printf("Fail to bind socketFD: %d\n", socketFD);
+            fprintf(stderr, "bind error: %s\n", strerror(errno));
+            return false;
+        }
 
+        int flag = fcntl(socketFD, F_GETFL, 0);
+        fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
 
-		setState(LISTEN);
+        if (listen(socketFD, 10) <0){
+            printf("Fail to listen socketFD: %d\n", socketFD);
+            fprintf(stderr, "listen error: %s\n", strerror(errno));
+            return false;
+        }
 
-	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT ));
+        setState(LISTEN);
 
-	if (listen(socketFD, 10) <0){
-		printf("Fail to listen socketFD: %d\n", socketFD);
-	    fprintf(stderr, "listen error: %s\n", strerror(errno));
-		return false;
-	}
-	sockService->updateEvent(socketFD, (READ_EVENT ));
+        usleep(1000);
 
-	setState(LISTEN);
+        sockService->attachHandle(socketFD, this);
+        sockService->updateEvent(socketFD, (READ_EVENT ));
 
-	usleep(1000);
+        printf("TCPServSocket Open\n");
 
-	sockService->attachHandle(socketFD, this);
-	sockService->updateEvent(socketFD, (READ_EVENT ));
+        return true;
+    } else {
 
-	printf("TCPServSocket Open\n");
+        usleep(1000);
 
-	return true;
+        int flag = fcntl(socketFD, F_GETFL, 0);
+        fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
+
+        if (connect(socketFD, (struct sockaddr*)&sin, sizeof(sin)) < 0){
+            printf("Fail to Connect socketFD: %d\n", socketFD);
+            fprintf(stderr, "Connect error: %s\n", strerror(errno));
+            if (errno ==  EINPROGRESS){
+                sockService->attachHandle(socketFD, this);
+                sockService->updateEvent(socketFD, WRITE_EVENT);
+                setState(CONNECT);
+                return true;
+            }
+            else false;
+        }
+    }
+
+    return true;
 }
 
 bool TCPSocket::Connect()
@@ -94,17 +112,11 @@ bool TCPSocket::Connect()
 	if( getsockopt(socketFD, SOL_SOCKET, SO_ERROR, (void*)&error, &len) < 0){
 		printf("Fail to connect wait socketFD: %d\n", socketFD);
 	    fprintf(stderr, "connect wait error: %s\n", strerror(errno));
-	    	// sockService->updateEvent(socketFD, EXCEPT_EVENT);
 		return false;
 	}
 
-	int flag = fcntl(socketFD, F_GETFL, 0);
-	fcntl(socketFD, F_SETFL, flag | O_NONBLOCK);
-
-	setState(ESTABLISHED);
-	
-	sockService->attachHandle(socketFD, this);
 	sockService->updateEvent(socketFD, (READ_EVENT));
+	setState(ESTABLISHED);
 
 	printf("TCPClivSocket ESTABLISHED\n");
 	
@@ -156,9 +168,4 @@ void TCPSocket::Close()
 	sockService->detachHandle(socketFD);
 	close(socketFD);
 
-}
-
-void TCPSocket::setEvent(int event)
-{
-	sockService->updateEvent(socketFD, event);
 }
