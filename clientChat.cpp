@@ -112,6 +112,8 @@ void clientChat(const char *addr)
                     if (strcmp(buf, CEXIT) == 0){
                         printf("ClientChat socket Close() by User action\n");
                         sock->Close();
+                        goto EXITLOOP;
+
                         return;
                     }
                 }
@@ -161,12 +163,10 @@ void clientChat(const char *addr)
                         // printf("ClientChat Send %d bytes\n", sendByte);
                           free(msg.cmd_msg.data);
 
-
-
-                        if(sendByte < datalen){
-                            printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                        }
+                        // if(sendByte < datalen){
+                        //     printf("ClientChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                        //     sock->setEvent(READ_EVENT | WRITE_EVENT );
+                        // }
 
                         break;
                     }
@@ -207,12 +207,6 @@ void clientChat(const char *addr)
 
                             // sock->setEvent(READ_EVENT | EXCEPT_EVENT);
                         }
-                        if (sockEvent & EXCEPT_EVENT){
-                            printf("ClientChat socket Close()\n");
-                            sock->Close();
-                            goto EXITLOOP;
-
-                        }
                         break;
                 }
             } else if(sockState == CLOSING){
@@ -231,11 +225,6 @@ void clientChat(const char *addr)
                         if (sockEvent & WRITE_EVENT){
                             printf("ClientChat socket Connect()\n");
                             sock->Connect();
-                        }
-                        if (sockEvent & EXCEPT_EVENT){
-                            printf("ClientChat socket Close()\n");
-                            sock->Close();
-                            return;
                         }
                         break;
                 }

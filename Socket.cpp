@@ -1,5 +1,8 @@
 #include "Socket.h"
+#include <arpa/inet.h>
 #include <unistd.h>
+
+
 #include <stdio.h>
 
 Socket::Socket()
@@ -10,7 +13,6 @@ Socket::Socket()
 
 Socket::~Socket()
 {
-	// close(socketFD);
 	if (!sockService->isRunnung()){
     	delete sockService;
 	   	printf("Delete sockService in ~Socket():%d \n", socketFD);

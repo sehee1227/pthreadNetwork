@@ -1,11 +1,11 @@
 Simple chat test program using TCP socket.
+Just type "make"  to compile and build
 
-To finish chat, just type "exit"
+To finish chat, type "exit"
 
-
-server command:
+for server side, type as follows:
  ./chatTest server 
 
-Client command:
+for client side:
 ./chatTest client Targetaddress
   -> Targetaddress ex: 192.168.219 100

@@ -87,7 +87,6 @@ bool SocketService::attachHandle(int handle, Socket* socket)
 	printf("SocketService::attach Handle threadRef:%d\n", threadRef);
 
 	return true;
-
 }
 
 void SocketService::detachHandle(int handle) 
@@ -120,11 +119,9 @@ void SocketService::terminateThread()
 	res = write(mctrlPipe[1], &ch, 2);
 	if (res <0){
 		printf("Pipe write fail on mctrlPipe[1]:%d\n",res);
-		fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}
-
-
 }
+
 void SocketService::updateEvent(int handle, int event)
 {
 
@@ -154,7 +151,6 @@ void SocketService::updateEvent(int handle, int event)
 		fprintf(stderr, "recv error: %s\n", strerror(errno));
 	}
 	sockCond.signal();
-
 }
 
 void SocketService::sendNotify(Socket* pInstance, int event)
@@ -167,10 +163,8 @@ bool SocketService::isRunnung()
 	if (threadRef != 0){
 		return true;
 	}
-
 	return false;
 }
-
 
 void* SocketService::run(void)
 {
