@@ -71,7 +71,7 @@ void* userCliThread(void* data)
         msgCliQue.putQ(msg);
     }
 }
-void clientChat(const char *addr)
+void clientChat(char *addr)
 {
     pthread_t thr;
     int sockEvent;
@@ -83,6 +83,24 @@ void clientChat(const char *addr)
     chatMsg msg;
 
     DataLink cdlink;
+
+    int status ;
+    struct sockaddr_in sin;
+    struct addrinfo *result;
+
+    printf("addr: %s\n", addr);
+
+    status = getaddrinfo(addr, 0, 0, &result);
+    if (status != 0){
+        perror("gethostbyname falied\n");
+        printf("Status : %d\n", status);
+        exit(0);
+    }
+
+    sin = *(sockaddr_in*)result->ai_addr;
+    strcpy(addr, inet_ntoa(sin.sin_addr));
+
+	freeaddrinfo(result);
     
     if(pthread_create(&thr, NULL, userCliThread, NULL) != 0){
         printf("Fail to pthread_create\n");
@@ -91,6 +109,7 @@ void clientChat(const char *addr)
     TCPSocket* sock = new TCPSocket();
 
     if (sock->Open(addr, PORT, CLIENT) == false){
+    // if (sock->Open(addr, PORT, CLIENT) == false){
         printf("Fail to open\n");
         return;
     }
