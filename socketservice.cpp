@@ -49,7 +49,7 @@ SocketService::SocketService()
 
 //	if(pthread_attr_init(&attr) != 0){
 //		pritnf("Fail to pthread_attr\n");
-	if(pthread_create(&thr, NULL, threadImp, reinterpret_cast<void*>(this)) != 0){
+	if(pthread_create(&thr, NULL, threadImp, static_cast<void*>(this)) != 0){
 		printf("Fail to pthread_create\n");
 	}
 }

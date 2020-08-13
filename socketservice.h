@@ -22,7 +22,6 @@ class SocketService
 		Socket* socket;
 	};
 	std::list<SockInfo> sockList;
-	pthread_t sockServThread_t;
 
 	int mctrlPipe[2];
 	int	mcntlEvent;
