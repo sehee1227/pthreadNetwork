@@ -10,14 +10,18 @@ class DataLink
     unsigned int read;
 
     int size;
+    int readSize;
+    void *m_pMutex;
 
     public:
-    DataLink() : write(0), read(0), size(0) {};
-    ~DataLink() {};
+    DataLink();
+    ~DataLink();
     int put(int size, char* buf);
     int get(int size, char*buf);
     void commit(int size);
     int getSize();
+    int getWrite();
+    int getRead();
     
 };
 #endif

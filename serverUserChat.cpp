@@ -31,6 +31,7 @@ enum cmdtype
 {
     USER_EVENT,
     NETWORK_EVENT,
+    USER_END,
 
 };
 
@@ -41,6 +42,8 @@ union cmd_msg{
 
 msgQueue<chatMsg> servInputQue;
 CondMgr servThrStart;
+
+DataLink dLink;
 
 void* servInputThread(void* data)
 {
@@ -55,13 +58,30 @@ void* servInputThread(void* data)
         fgets(buf, sizeof(buf), stdin);
         int len = strlen(buf);
 
-        char* data = (char *)malloc(len);
-        memset(data, 0x00, len);
-        strncpy(data, buf, len);
+        size_t EndLen = strlen(EXIT);
+        char temp[6];
+        if (EndLen == len){
+            for(int i=0; i<(int)len; i++){
+                temp[i] = toupper(*(buf+i));
+            }
+
+            if (strcmp(temp, EXIT) == 0){
+                msg.cmd = USER_END;
+                servInputQue.putQ(msg);
+                continue;
+            }
+        }
+
+        // printf("User Input len: %d, string: %s\n", len, buf);
+        int res = dLink.put(len, buf);
+
+        if (res != len){
+            printf("Can't write to DataLink...User Input: %d, DataLink Write:%d\n", len, res);
+        }
 
         msg.cmd = USER_EVENT;
-        msg.cmd_msg.data = data;
         servInputQue.putQ(msg);
+
     }
 }
 
@@ -104,23 +124,10 @@ void* serverUserChat(void* data)
 
             // printf("socket sate:%d\n", sockState);
 
-            if (msg.cmd == USER_EVENT){
-                char buf[5];
-                size_t len = strlen(EXIT);
-                if (strlen(msg.cmd_msg.data) == len){
-                    for(int i=0; i<(int)len; i++){
-                        buf[i] = toupper(*(msg.cmd_msg.data+i));
-                    }
-                    if (strcmp(buf, EXIT) == 0){
-                        printf("serverChat socket Close() by User action\n");
-                        sock->Close();
-                        goto EXITLOOP;
-                    }
-                }
-                // sdlink.put(strlen(msg.cmd_msg.data), msg.cmd_msg.data);
-                // printf("USER_EVENT length:%d, %s\n", (int)strlen(msg.cmd_msg.data), msg.cmd_msg.data);
-
-                // free(msg.cmd_msg.data);
+            if (msg.cmd == USER_END){
+                printf("serverChat socket Close() by User action\n");
+                sock->Close();
+                goto EXITLOOP;
 
             } 
             else if(msg.cmd == NETWORK_EVENT){
@@ -140,24 +147,27 @@ void* serverUserChat(void* data)
                 switch(msg.cmd){
                     case USER_EVENT:
                     {
-                        // datalen = sdlink.getSize();
-                        // char* buf = (char*)malloc(datalen);
-                        // sdlink.get(datalen, buf);
+                        char buf[128];
+                        int size;
+                        size = dLink.getSize();
 
-                        // sdlink.commit(sendByte);
-
-                        datalen = strlen(msg.cmd_msg.data);
-
-                        // printf("serverChat before Send %d bytes: %s\n", datalen, msg.cmd_msg.data);
-                        sendByte = sock->Send(     msg.cmd_msg.data, datalen);
-                        // printf("serverChat Send %d bytes\n", sendByte);
-                          free(msg.cmd_msg.data);
-
-
-                        if(sendByte < datalen){
-                            printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            // sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
+                        if (sizeof(buf) < size){
+                            size = sizeof(buf);
                         }
+                        
+                        dLink.get(size, buf);
+                        sendByte = sock->Send(buf, size);
+                        dLink.commit(sendByte-1);
+                        buf[size] = '\0';
+                        // printf("Network send len: %d, string: %s\n", sendByte-1, buf);
+                        // printf("---------------------------------------------------\n");
+
+
+
+                        // if(sendByte-1 < size){
+                        //     printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                        //     sock->setEvent(READ_EVENT | WRITE_EVENT );
+                        // }
 
                         break;
                     }
@@ -174,30 +184,35 @@ void* serverUserChat(void* data)
                                 goto  EXITLOOP;
                             }
                             if (recvCnt > 0){
-                                recBuf[recvCnt] = '\0';
-                                // printf("serverChat recvCnt: %d\n", recvCnt);
+                                recBuf[recvCnt-1] = '\0';
+                                printf("serverChat recvCnt: %d\n", recvCnt);
                                 printf("-->%s", recBuf);
                             }
 
                         }
                         if (sockEvent & WRITE_EVENT){
-                            // datalen = sdlink.getSize();
-                            // char* buf = (char*)malloc(datalen);
-                            // sdlink.get(datalen, buf);
-                            // sendByte = sock->Send(buf, datalen);
-                            // printf("serverChat Send %d bytes\n", sendByte);
+                            char buf[128];
+                            int size;
+                            size = dLink.getSize();
+                            
+                            if (sizeof(buf) < size){
+                                size = sizeof(buf);
+                            }   
+                            
+                            dLink.get(size, buf);
+                            sendByte = sock->Send(buf, size);
+                            dLink.commit(sendByte-1);
 
-                            // sdlink.commit(sendByte);
 
-                            // if(sendByte < datalen){
-                            //     printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
-                            //     sock->setEvent(READ_EVENT | WRITE_EVENT | EXCEPT_EVENT);
-                            // } else{
-                            //     sock->setEvent(READ_EVENT | EXCEPT_EVENT);
-                            // }
+                            if(sendByte-1 < size){
+                                printf("serverChat pendQ push_back %d bytes\n", (datalen-sendByte));
+                                sock->setEvent(READ_EVENT | WRITE_EVENT );
+                            }else{
 
-                            printf("serverChat ESTABLISEHD WRITE EVENT \n");
-                            sock->setEvent(READ_EVENT | EXCEPT_EVENT);
+                                printf("serverChat ESTABLISEHD WRITE EVENT \n");
+                                sock->setEvent(READ_EVENT );
+
+                            }
 
                         }
                         break;
